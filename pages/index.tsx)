@@ -1,0 +1,27 @@
+import VersionHistory from "../components/VersionHistory";
+import CiHealth from "../components/CiHealth";
+import StabilityMetrics from "../components/StabilityMetrics";
+import { getReleases, getWorkflowRuns } from "../lib/github";
+import { computeStability } from "../lib/metrics";
+
+export async function getServerSideProps() {
+  const repo = "lifestyle3nergy-web/TWGT-";
+  const token = process.env.GITHUB_TOKEN;
+
+  const releases = await getReleases(repo, token);
+  const runs = await getWorkflowRuns(repo, token);
+  const metrics = computeStability(runs.workflow_runs);
+
+  return { props: { releases, runs: runs.workflow_runs, metrics } };
+}
+
+export default function Dashboard({ releases, runs, metrics }) {
+  return (
+    <main style={{ padding: "2rem", fontFamily: "system-ui" }}>
+      <h1>TWGT Release Dashboard</h1>
+      <VersionHistory releases={releases} />
+      <CiHealth runs={runs} />
+      <StabilityMetrics metrics={metrics} />
+    </main>
+  );
+}
