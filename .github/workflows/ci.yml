@@ -11,6 +11,10 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   validate:
     name: Validate Repository
@@ -21,6 +25,72 @@ jobs:
         uses: actions/checkout@v7
 
       - name: Display repository structure
+        shell: bash
         run: |
           echo "Repository checked out successfully."
-          ls -la
+          echo
+          echo "Git status:"
+          git status --short --branch
+          echo
+          echo "Top-level structure:"
+          find . -maxdepth 2 \
+            -type f \
+            -not -path './.git/*' \
+            -not -path './node_modules/*' \
+            | sort
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: 24.x
+          cache: npm
+
+      - name: Display toolchain versions
+        run: |
+          node --version
+          npm --version
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Verify dependency tree
+        run: npm ls --depth=0
+
+      - name: Build
+        run: npm run build
+
+      - name: Run tests
+        run: npm test
+
+      - name: Run lint
+        run: npm run lint
+
+      - name: Runtime validation
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          test -f dist/index.js
+
+          echo "Runtime entrypoint found: dist/index.js"
+
+          node --check dist/index.js
+
+          echo "Node syntax validation passed."
+
+          node -e "
+            const fs = require('fs');
+            const path = require('path');
+
+            const entry = path.resolve('dist/index.js');
+
+            if (!fs.existsSync(entry)) {
+              console.error('Runtime entrypoint does not exist:', entry);
+              process.exit(1);
+            }
+
+            console.log('Runtime artifact validated:', entry);
+          "
+
+      - name: Git diff validation
+        run: git diff --check
