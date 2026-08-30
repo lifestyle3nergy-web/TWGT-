@@ -1,4 +1,4 @@
-import { FastifyRequest, FastifyReply } from 'fastify';
+import type { FastifyRequest, FastifyReply } from 'fastify';
 import { AuthService } from '@auth/auth.service';
 import { z } from 'zod';
 import { logger } from '@config';
