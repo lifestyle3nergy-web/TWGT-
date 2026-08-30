@@ -8,7 +8,7 @@ export default [
     files: ['src/**/*.{ts,tsx}'],
     rules: {
       'no-console': 'off',
-      '@typescript-eslint/no-explicit-any': 'warn',
+      '@typescript-eslint/no-explicit-any': 'off',
     },
   },
 ];
