@@ -1,5 +1,5 @@
 import { FastifyRequest, FastifyReply } from 'fastify';
-import { AuthService, RegisterInput, LoginInput } from '@auth/auth.service';
+import { AuthService } from '@auth/auth.service';
 import { z } from 'zod';
 import { logger } from '@config';
 
