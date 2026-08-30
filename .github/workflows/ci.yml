@@ -42,7 +42,7 @@ jobs:
       - name: Set up Node.js
         uses: actions/setup-node@v6
         with:
-          node-version: 24.x
+          node-version: 24.19.0
           cache: npm
 
       - name: Display toolchain versions
@@ -62,7 +62,7 @@ jobs:
       - name: Run tests
         run: npm test
 
-      - name: Run lint
+      - name: Run lint and typecheck
         run: npm run lint
 
       - name: Runtime validation
