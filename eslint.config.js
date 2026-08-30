@@ -1,5 +1,16 @@
 import js from '@eslint/js';
 
+const nodeGlobals = {
+  console: 'readonly',
+  process: 'readonly',
+  require: 'readonly',
+  module: 'readonly',
+  __dirname: 'readonly',
+  __filename: 'readonly',
+  URL: 'readonly',
+  URLSearchParams: 'readonly',
+};
+
 export default [
   {
     ignores: [
@@ -7,6 +18,7 @@ export default [
       'dist/',
       'build/',
       'coverage/',
+      'cli/index.js',
     ],
   },
 
@@ -17,12 +29,22 @@ export default [
     languageOptions: {
       ecmaVersion: 'latest',
       sourceType: 'module',
+      globals: nodeGlobals,
     },
 
     rules: {
       'no-unused-vars': 'warn',
       'no-undef': 'error',
       'no-console': 'warn',
+    },
+  },
+
+  {
+    files: ['cli/**/*.js', 'scripts/**/*.js'],
+    languageOptions: {
+      ecmaVersion: 'latest',
+      sourceType: 'commonjs',
+      globals: nodeGlobals,
     },
   },
 ];
