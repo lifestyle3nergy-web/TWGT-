@@ -1,4 +1,4 @@
-import { FastifyRequest, FastifyReply } from 'fastify';
+import type { FastifyRequest, FastifyReply } from 'fastify';
 import { logger } from '@config';
 
 export async function authGuard(request: FastifyRequest, reply: FastifyReply) {
