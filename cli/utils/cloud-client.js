@@ -25,7 +25,7 @@ class CloudClient {
         port: url.port,
         path: url.pathname + url.search,
         headers: {
-          "Authorization": `Bearer ${this.apiKey}`,
+          Authorization: `Bearer ${this.apiKey}`,
           "Content-Type": "application/json",
           "User-Agent": "copilot-cli/1.0.0",
         },
@@ -52,7 +52,7 @@ class CloudClient {
             } else {
               resolve(parsed);
             }
-          } catch (e) {
+          } catch {
             if (res.statusCode >= 400) {
               reject(new Error(`HTTP ${res.statusCode}: ${body}`));
             } else {
@@ -88,8 +88,7 @@ class CloudClient {
     if (opts.knowledgeBase) params.append("kb", opts.knowledgeBase);
     if (opts.since) params.append("since", opts.since);
 
-    const path =
-      "/api/pull" + (params.toString() ? "?" + params : "");
+    const path = "/api/pull" + (params.toString() ? "?" + params : "");
     return this.request("GET", path);
   }
 
@@ -111,8 +110,7 @@ class CloudClient {
     if (opts.lines) params.append("lines", opts.lines);
     if (opts.since) params.append("since", opts.since);
 
-    const path =
-      "/api/logs" + (params.toString() ? "?" + params : "");
+    const path = "/api/logs" + (params.toString() ? "?" + params : "");
     return this.request("GET", path);
   }
 
