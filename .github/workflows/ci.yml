@@ -65,32 +65,10 @@ jobs:
       - name: Run lint and typecheck
         run: npm run lint
 
-      - name: Runtime validation
-        shell: bash
+      - name: Validate build imports and entrypoint syntax
         run: |
-          set -euo pipefail
-
-          test -f dist/index.js
-
-          echo "Runtime entrypoint found: dist/index.js"
-
           node --check dist/index.js
-
-          echo "Node syntax validation passed."
-
-          node -e "
-            const fs = require('fs');
-            const path = require('path');
-
-            const entry = path.resolve('dist/index.js');
-
-            if (!fs.existsSync(entry)) {
-              console.error('Runtime entrypoint does not exist:', entry);
-              process.exit(1);
-            }
-
-            console.log('Runtime artifact validated:', entry);
-          "
+          node scripts/validate-dist-imports.mjs
 
       - name: Git diff validation
         run: git diff --check

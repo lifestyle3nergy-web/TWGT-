@@ -31,6 +31,7 @@ jobs:
         run: |
           npm run lint
           npm run build
+          node scripts/validate-dist-imports.mjs
           npm test
 
       - name: Create GitHub Release
