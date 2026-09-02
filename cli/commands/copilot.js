@@ -9,7 +9,6 @@ module.exports = async function (opts) {
     return handleCloudCommand(action, opts);
   }
 
-  // Local mode
   switch (action) {
     case "init":
       return initCopilot(opts);
@@ -39,7 +38,7 @@ async function handleCloudCommand(action, opts) {
       case "pull":
         return await pullFromCloud(client, opts);
       case "status":
-        return await statusCloud(client, opts);
+        return await statusCloud(client);
       case "config":
         return await configCloud(client, opts);
       case "logs":
@@ -62,14 +61,12 @@ async function handleCloudCommand(action, opts) {
   }
 }
 
-async function initCopilot(opts) {
+async function initCopilot(_opts) {
   console.log("🚀 Initializing Copilot...");
 
   try {
-    // Create .copilot config directory
     execSync("mkdir -p .copilot", { stdio: "inherit" });
 
-    // Create config file
     const config = {
       version: "1.0.0",
       enabled: true,
@@ -94,7 +91,6 @@ async function initCopilot(opts) {
       JSON.stringify(config, null, 2)
     );
 
-    // Create .env.example
     const envExample = `COPILOT_API_KEY=your_api_key_here
 COPILOT_ENDPOINT=https://copilot-cloud.ai
 JWT_SECRET=your_jwt_secret_here
@@ -112,13 +108,11 @@ DATABASE_URL=postgresql://user:password@localhost:5432/twgt`;
   }
 }
 
-async function syncCopilot(opts) {
+async function syncCopilot(_opts) {
   console.log("🔄 Syncing Copilot knowledge base...");
 
   try {
-    // In cloud mode, this would sync to the cloud
     console.log("📦 Scanning knowledge entries...");
-    // This would query the database and sync
     console.log("✅ Knowledge base synced.");
   } catch (err) {
     console.error("❌ Sync failed:", err.message);
@@ -126,7 +120,7 @@ async function syncCopilot(opts) {
   }
 }
 
-async function statusCopilot(opts) {
+async function statusCopilot(_opts) {
   console.log("📊 Copilot Status");
   console.log("─".repeat(50));
 
@@ -176,7 +170,7 @@ async function pullFromCloud(client, opts) {
   console.log(`📊 Latest sync: ${response.lastSync}`);
 }
 
-async function statusCloud(client, opts) {
+async function statusCloud(client) {
   console.log("☁️  Checking Copilot Cloud status...");
 
   const response = await client.status();

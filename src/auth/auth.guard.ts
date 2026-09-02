@@ -1,4 +1,4 @@
-import { FastifyRequest, FastifyReply } from 'fastify';
+import type { FastifyRequest, FastifyReply } from 'fastify';
 import { logger } from '@config';
 
 export async function authGuard(request: FastifyRequest, reply: FastifyReply) {
@@ -15,10 +15,10 @@ export async function authGuard(request: FastifyRequest, reply: FastifyReply) {
   }
 }
 
-export async function optionalAuthGuard(request: FastifyRequest, reply: FastifyReply) {
+export async function optionalAuthGuard(request: FastifyRequest) {
   try {
     await request.jwtVerify();
-  } catch (error) {
+  } catch {
     // Optional auth - continue even if token is invalid
   }
 }

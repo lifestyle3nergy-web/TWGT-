@@ -9,16 +9,13 @@ async function main() {
   try {
     logger.info('🚀 Starting TWGT Platform');
 
-    // Connect to database
     logger.info('📦 Connecting to database...');
     await prisma.$connect();
     logger.info('✅ Database connected');
 
-    // Bootstrap the application
     const server = await bootstrap();
     app = server;
 
-    // Start the server
     await server.listen({ port: env.PORT, host: env.HOST });
     logger.info(`✅ Server listening at http://${env.HOST}:${env.PORT}`);
   } catch (error) {
@@ -27,12 +24,27 @@ async function main() {
   }
 }
 
-// Graceful shutdown
 async function shutdown(signal: string) {
   logger.info(`${signal} received, shutting down gracefully...`);
-  await app?.close();
-  await redis.quit();
-  await prisma.$disconnect();
+
+  try {
+    await app?.close();
+  } catch (error) {
+    logger.error({ error }, 'Failed to close application server');
+  }
+
+  try {
+    await redis.quit();
+  } catch (error) {
+    logger.error({ error }, 'Failed to close Redis connection');
+  }
+
+  try {
+    await prisma.$disconnect();
+  } catch (error) {
+    logger.error({ error }, 'Failed to disconnect database');
+  }
+
   process.exit(0);
 }
 
@@ -40,6 +52,6 @@ process.on('SIGTERM', () => void shutdown('SIGTERM'));
 process.on('SIGINT', () => void shutdown('SIGINT'));
 
 main().catch((error) => {
-  console.error('Fatal error:', error);
+  logger.error({ error }, 'Fatal application error');
   process.exit(1);
 });
