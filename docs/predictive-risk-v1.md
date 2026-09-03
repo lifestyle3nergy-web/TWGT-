@@ -10,7 +10,7 @@ This bounded foundation classifies repository changes and converts read-only evi
 4. Apply deterministic weights and thresholds from the versioned policy.
 5. Emit one recommendation with reasons and uncertainty for human review.
 
-`PASS` is impossible when required evidence is missing. A failing security signal or score of 80+ produces `REJECT`; incomplete evidence or a score of 40+ produces `HOLD`.
+`PASS` is impossible when required evidence is missing. Any failing evidence signal, a policy that relaxes the mandatory human-approval or no-production-mutation boundary, or a score of 80+ produces `REJECT`; incomplete evidence or a score of 40+ produces `HOLD`.
 
 ## Trust boundary
 
