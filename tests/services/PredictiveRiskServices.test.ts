@@ -4,6 +4,7 @@ import { describe, expect, it } from 'vitest';
 import { ChangeClassifierService } from '../../src/services/ChangeClassifierService';
 import { EvidenceCollectorService, type RawEvidence } from '../../src/services/EvidenceCollectorService';
 import { RiskScoringService } from '../../src/services/RiskScoringService';
+import { PolicyEvaluatorService } from '../../src/services/PolicyEvaluatorService';
 import { EXECUTION_ENVELOPE_VERSION, validateExecutionEnvelope, type ExecutionEnvelope } from '../../src/contracts/ExecutionEnvelope';
 
 const fixturePath = fileURLToPath(new URL('../fixtures/predictive-risk/security-failure.json', import.meta.url));
@@ -11,7 +12,7 @@ const fixture = JSON.parse(readFileSync(fixturePath, 'utf8')) as { repository: s
 
 describe('predictive risk foundation', () => {
   it('classifies security-sensitive changes deterministically', () => {
-    expect(new ChangeClassifierService().classify(fixture.paths)).toEqual(['security']);
+    expect(new ChangeClassifierService().classify(fixture.paths)).toEqual(['runtime', 'security']);
   });
 
   it('redacts evidence and rejects a demonstrated scan failure', () => {
@@ -19,6 +20,7 @@ describe('predictive risk foundation', () => {
     expect(evidence.find((item) => item.kind === 'scan')?.source).toBe('token=[REDACTED]');
     const risk = new RiskScoringService().assess(['security'], evidence);
     expect(risk.decision).toBe('REJECT');
+    expect(new PolicyEvaluatorService().evaluate(risk, evidence)).toBe('REJECT');
     expect(risk.uncertainty).toEqual(expect.arrayContaining([expect.stringContaining('missing check'), expect.stringContaining('missing test')]));
   });
 
