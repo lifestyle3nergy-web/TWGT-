@@ -1,0 +1,72 @@
+name: Predictive Risk Validation
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'src/contracts/ExecutionEnvelope.ts'
+      - 'src/services/ChangeClassifierService.ts'
+      - 'src/services/EvidenceCollectorService.ts'
+      - 'src/services/RiskScoringService.ts'
+      - 'src/services/PolicyEvaluatorService.ts'
+      - 'src/policies/pr-risk-policy.json'
+      - 'scripts/scan-credential-signatures.sh'
+      - 'tests/fixtures/predictive-risk/**'
+      - 'tests/services/PredictiveRiskServices.test.ts'
+      - 'tests/tooling/credential-scan.test.mjs'
+      - 'docs/predictive-risk-v1.md'
+      - '.github/workflows/predictive-validation.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: predictive-risk-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 24.19.0
+          cache: npm
+      - run: npm ci
+      - run: npm run typecheck
+      - run: npx vitest run tests/services/PredictiveRiskServices.test.ts
+      - run: npm run build
+      - name: Scan tracked source for credential signatures
+        run: bash scripts/scan-credential-signatures.sh
+      - name: Test credential scan detection and fixture exclusion
+        run: node --test tests/tooling/credential-scan.test.mjs
+      - name: Validate policy schema and safety boundary
+        run: |
+          node --input-type=module <<'NODE'
+          import { readFileSync } from 'node:fs';
+          const policy = JSON.parse(readFileSync('src/policies/pr-risk-policy.json', 'utf8'));
+          if (policy.version !== '1.0.0') throw new Error('Unsupported policy version');
+          if (policy.humanApprovalRequired !== true) throw new Error('Human approval must remain mandatory');
+          if (policy.productionMutationAllowed !== false) throw new Error('Production mutation must remain disabled');
+          NODE
+      - name: Produce immutable validation evidence
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p predictive-evidence
+          cp src/policies/pr-risk-policy.json predictive-evidence/policy.json
+          git rev-parse HEAD > predictive-evidence/commit-sha.txt
+          sha256sum predictive-evidence/policy.json > predictive-evidence/SHA256SUMS
+          printf '{"credentialsUsed":false,"productionMutation":false}\n' \
+            > predictive-evidence/execution-boundary.json
+      - name: Upload validation evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: predictive-risk-evidence-${{ github.sha }}
+          path: predictive-evidence/
+          retention-days: 14
+          if-no-files-found: error
+      - run: git diff --check

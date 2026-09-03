@@ -1,0 +1,9 @@
+{
+  "repository": "lifestyle3nergy-web/TWGT-",
+  "headSha": "1111111111111111111111111111111111111111",
+  "paths": ["src/auth/token.ts", "package-lock.json"],
+  "evidence": [
+    { "id": "commit-1", "kind": "commit", "source": "https://github.com/example/commit/1", "observedAt": "2026-09-03T00:00:00Z", "status": "pass" },
+    { "id": "scan-1", "kind": "scan", "source": "token=synthetic-test-value", "observedAt": "2026-09-03T00:01:00Z", "status": "fail" }
+  ]
+}

@@ -1,0 +1,7 @@
+{
+  "version": "1.0.0",
+  "requiredEvidence": ["commit", "check", "test", "scan"],
+  "thresholds": { "hold": 40, "reject": 80 },
+  "humanApprovalRequired": true,
+  "productionMutationAllowed": false
+}
