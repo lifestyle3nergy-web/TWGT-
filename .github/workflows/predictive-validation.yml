@@ -10,8 +10,11 @@ on:
       - 'src/services/RiskScoringService.ts'
       - 'src/services/PolicyEvaluatorService.ts'
       - 'src/policies/pr-risk-policy.json'
+      - 'scripts/scan-credential-signatures.sh'
       - 'tests/fixtures/predictive-risk/**'
       - 'tests/services/PredictiveRiskServices.test.ts'
+      - 'tests/tooling/credential-scan.test.mjs'
+      - 'docs/predictive-risk-v1.md'
       - '.github/workflows/predictive-validation.yml'
   workflow_dispatch:
 
@@ -37,13 +40,9 @@ jobs:
       - run: npx vitest run tests/services/PredictiveRiskServices.test.ts
       - run: npm run build
       - name: Scan tracked source for credential signatures
-        shell: bash
-        run: |
-          set -euo pipefail
-          if git grep -nEI -- +            '-----BEGIN (RSA|EC|OPENSSH) PRIVATE KEY-----|AKIA[0-9A-Z]{16}|gh[pousr]_[A-Za-z0-9_]{30,}' +            -- ':!tests/fixtures/**'; then
-            echo 'Credential signature detected in tracked source.'
-            exit 1
-          fi
+        run: bash scripts/scan-credential-signatures.sh
+      - name: Test credential scan detection and fixture exclusion
+        run: node --test tests/tooling/credential-scan.test.mjs
       - name: Validate policy schema and safety boundary
         run: |
           node --input-type=module <<'NODE'
@@ -61,7 +60,8 @@ jobs:
           cp src/policies/pr-risk-policy.json predictive-evidence/policy.json
           git rev-parse HEAD > predictive-evidence/commit-sha.txt
           sha256sum predictive-evidence/policy.json > predictive-evidence/SHA256SUMS
-          printf '{"credentialsUsed":false,"productionMutation":false}\n' +            > predictive-evidence/execution-boundary.json
+          printf '{"credentialsUsed":false,"productionMutation":false}\n' \
+            > predictive-evidence/execution-boundary.json
       - name: Upload validation evidence
         uses: actions/upload-artifact@v4
         with:
