@@ -19,6 +19,14 @@ export class PolicyEvaluatorService {
     evidence: readonly EvidenceReference[],
     policy: RiskPolicy = DEFAULT_POLICY,
   ): Decision {
+    if (policy.humanApprovalRequired !== true || policy.productionMutationAllowed !== false) return 'REJECT';
+    if (
+      !Number.isFinite(policy.thresholds.hold) ||
+      !Number.isFinite(policy.thresholds.reject) ||
+      policy.thresholds.hold < 0 ||
+      policy.thresholds.reject > 100 ||
+      policy.thresholds.hold >= policy.thresholds.reject
+    ) return 'REJECT';
     const hasFailure = evidence.some((item) => item.status === 'fail');
     const hasMissing = evidence.some((item) => item.status === 'missing');
     if (hasFailure || risk.score >= policy.thresholds.reject) return 'REJECT';
