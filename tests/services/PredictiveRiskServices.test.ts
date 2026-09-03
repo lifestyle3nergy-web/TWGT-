@@ -30,4 +30,48 @@ describe('predictive risk foundation', () => {
     const envelope: ExecutionEnvelope = { version: EXECUTION_ENVELOPE_VERSION, repository: fixture.repository, headSha: fixture.headSha, categories: ['documentation'], evidence, risk: { score: risk.score, reasons: risk.reasons, uncertainty: risk.uncertainty }, decision: 'PASS', requiresHumanApproval: true };
     expect(validateExecutionEnvelope(envelope)).toContain('missing evidence cannot produce PASS');
   });
+
+  it('classifies deployment, migration, environment template, and lockfile paths', () => {
+    const categories = new ChangeClassifierService().classify([
+      'compose.yaml',
+      'infrastructure/terraform/main.tf',
+      'prisma/migrations/001_init/migration.sql',
+      '.env.production.template',
+      'pnpm-lock.yaml',
+      'yarn.lock',
+    ]);
+    expect(categories).toEqual(['ci-cd', 'runtime', 'security']);
+  });
+
+  it.each([
+    [39, 'PASS'],
+    [40, 'HOLD'],
+    [79, 'HOLD'],
+    [80, 'REJECT'],
+  ] as const)('applies threshold boundary %i as %s', (score, expected) => {
+    expect(new PolicyEvaluatorService().evaluate(
+      { score, reasons: [], uncertainty: [], decision: 'PASS' },
+      [{ id: 'check-1', kind: 'check', source: 'synthetic', observedAt: '2026-09-03T00:00:00Z', status: 'pass' }],
+    )).toBe(expected);
+  });
+
+  it('adds mixed-category weights deterministically', () => {
+    const assessment = new RiskScoringService().assess(['documentation', 'runtime', 'routing'], []);
+    expect(assessment.score).toBe(30);
+    expect(assessment.reasons).toEqual(['runtime:10', 'routing:20']);
+  });
+
+  it('rejects any failed evidence and holds missing evidence', () => {
+    const scorer = new RiskScoringService();
+    expect(scorer.assess(['documentation'], [{ id: 'test-1', kind: 'test', source: 'synthetic', observedAt: '2026-09-03T00:00:00Z', status: 'fail' }]).decision).toBe('REJECT');
+    expect(scorer.assess(['documentation'], [{ id: 'scan-1', kind: 'scan', source: 'missing', observedAt: 'missing', status: 'missing' }]).decision).toBe('HOLD');
+  });
+
+  it('rejects policies that relax approval or production boundaries', () => {
+    const evaluator = new PolicyEvaluatorService();
+    const risk = { score: 0, reasons: [], uncertainty: [], decision: 'PASS' as const };
+    const evidence = [{ id: 'check-1', kind: 'check' as const, source: 'synthetic', observedAt: '2026-09-03T00:00:00Z', status: 'pass' as const }];
+    expect(evaluator.evaluate(risk, evidence, { thresholds: { hold: 40, reject: 80 }, humanApprovalRequired: false, productionMutationAllowed: false } as never)).toBe('REJECT');
+    expect(evaluator.evaluate(risk, evidence, { thresholds: { hold: 40, reject: 80 }, humanApprovalRequired: true, productionMutationAllowed: true } as never)).toBe('REJECT');
+  });
 });
