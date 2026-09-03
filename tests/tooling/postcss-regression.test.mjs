@@ -8,14 +8,14 @@ test('PostCSS parses and transforms representative TWGT styles', async () => {
   const result = await postcss([
     {
       postcssPlugin: 'twgt-postcss-regression',
-      Rule(rule) {
-        visited.push(rule.selector);
-        rule.selector = postcss.list.comma(rule.selector).join(', ');
-      },
-      Declaration(declaration) {
-        if (declaration.prop === 'color') {
+      Once(root) {
+        root.walkRules((rule) => {
+          visited.push(rule.selector);
+          rule.selector = postcss.list.comma(rule.selector).join(', ');
+        });
+        root.walkDecls('color', (declaration) => {
           declaration.value = declaration.value.toUpperCase();
-        }
+        });
       },
     },
   ]).process(
