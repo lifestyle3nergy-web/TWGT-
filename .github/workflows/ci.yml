@@ -56,11 +56,17 @@ jobs:
       - name: Verify dependency tree
         run: npm ls --depth=0
 
+      - name: Enforce zero high or critical audit findings
+        run: npm audit --package-lock-only --audit-level=high
+
       - name: Build
         run: npm run build
 
       - name: Run tests
         run: npm test
+
+      - name: Run focused authentication, routing, Nano ID, and PostCSS regressions
+        run: npx vitest run tests/security/runtime-dependencies.test.ts
 
       - name: Run lint and typecheck
         run: npm run lint
