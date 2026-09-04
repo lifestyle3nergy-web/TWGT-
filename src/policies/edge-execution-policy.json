@@ -1,0 +1,30 @@
+{
+  "version": 1,
+  "androidEdge": {
+    "persistentProcess": false,
+    "heavyweightBuild": false,
+    "largeModel": false,
+    "largeVectorStore": false,
+    "preferredCapabilities": [
+      "state.sqlite",
+      "cache.local",
+      "network.detect",
+      "task.submit",
+      "git.lightweight",
+      "telemetry.collect",
+      "classification.local"
+    ]
+  },
+  "network": {
+    "wifi": {
+      "allow": ["repository.clone", "dependency.install", "sync.large", "model.download", "backup", "artifact.download"]
+    },
+    "mobile": {
+      "allow": ["model.api", "git.push", "git.pull.small", "telemetry", "messages", "research.public"],
+      "defer": ["container.pull", "repository.clone.large", "model.download", "backup.bulk"]
+    },
+    "offline": {
+      "allow": ["state.sqlite", "search.local", "git.status", "documents.cached", "classification.local"]
+    }
+  }
+}
