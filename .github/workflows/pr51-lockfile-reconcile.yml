@@ -77,6 +77,7 @@ jobs:
             }
           }
           NODE
+          npm ci --ignore-scripts
           npm ls fast-uri find-my-way postcss nanoid --all
       - name: Commit generated lockfile
         shell: bash
