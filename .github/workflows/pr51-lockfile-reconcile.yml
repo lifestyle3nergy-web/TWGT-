@@ -4,12 +4,19 @@ on:
   push:
     branches:
       - security/pr51-runtime-only
+  pull_request:
+    branches:
+      - main
+    paths:
+      - package-lock.json
+      - package.json
+      - .github/workflows/pr51-lockfile-reconcile.yml
 
 permissions:
   contents: write
 
 concurrency:
-  group: pr51-lockfile-reconcile
+  group: pr51-lockfile-reconcile-${{ github.ref }}
   cancel-in-progress: false
 
 jobs:
