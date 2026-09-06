@@ -10,23 +10,22 @@ The format is based on **Keep a Changelog** and follows **Semantic Versioning (S
 
 ### Added
 
-- Initial TWGT repository.
-- Platform vision documentation.
-- Architecture specification.
-- Development roadmap.
-- Contributing guidelines.
-- Security policy.
-- MIT License.
+- Repository contract and governance layer.
+- ADR template and stable repository boundary decision.
+- Ecosystem federation map.
+- Isolated activation artifact boundary.
+- Automated repository-contract and YAML validation in CI.
+
+### Changed
+
+- README now states the repository stability guarantee.
+- Pull-request CI now separates governance validation from application validation.
 
 ### Planned
 
-- Governance framework.
 - Knowledge Service Pod specification.
 - Engineering standards.
 - Infrastructure documentation.
-- CI/CD workflows.
-- GitHub issue templates.
-- Architecture Decision Records (ADR).
 - Release automation.
 
 ---
