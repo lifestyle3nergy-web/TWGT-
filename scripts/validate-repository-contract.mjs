@@ -1,18 +1,25 @@
 import { execFileSync } from 'node:child_process';
-import { existsSync, readFileSync, readdirSync } from 'node:fs';
+import { readFileSync } from 'node:fs';
 
 const run = (args) => execFileSync('git', args, { encoding: 'utf8' }).trim();
 const files = run(['ls-files']).split('\n').filter(Boolean);
 const errors = [];
 
+const allowedEnvironmentFiles = new Set(['.env.example']);
 const forbiddenPathPatterns = [
   /(^|\/)node_modules\//,
-  /(^|\/)\.env($|\.)/,
   /(^|\/)(id_rsa|id_ed25519)(\.|$)/,
   /\.(pem|key|p12|pfx)$/i,
 ];
 
 for (const file of files) {
+  if (
+    /(^|\/)\.env($|\.)/.test(file) &&
+    !allowedEnvironmentFiles.has(file)
+  ) {
+    errors.push(`Forbidden tracked path: ${file}`);
+  }
+
   if (forbiddenPathPatterns.some((pattern) => pattern.test(file))) {
     errors.push(`Forbidden tracked path: ${file}`);
   }
@@ -26,13 +33,15 @@ for (const file of files.filter((file) => /\.json$/i.test(file))) {
   }
 }
 
-const topLevel = new Set(files.map((file) => file.split('/')[0]).filter(Boolean));
+// This list is the verified top-level tracked baseline from main.
+// Existing entries are frozen; malformed legacy entries are preserved until
+// a separate cleanup change explicitly relocates or removes them.
 const baselineTopLevel = new Set([
-  '.github',
-  '.gitignore',
-  '.gitattributes',
   '.editorconfig',
   '.env.example',
+  '.gitattributes',
+  '.github',
+  '.gitignore',
   '.nvmrc',
   '.prettierignore',
   '.prettierrc',
@@ -40,29 +49,44 @@ const baselineTopLevel = new Set([
   'CHANGELOG.md',
   'CODE_OF_CONDUCT.md',
   'CONTRIBUTING.md',
+  'CiHealth.tsx',
   'LICENSE',
   'README.md',
-  'REPO-CONTRACT.md',
   'ROADMAP.md',
   'SECURITY.md',
+  'StabilityMetrics.tsx',
   'VISION.md',
-  'activation',
+  'VersionHistory.tsx',
   'cli',
   'dashboard',
   'docs',
+  'eslint.config.js',
+  'generate:  A GitHub Action that auto-updates dependencies  A TWGT CLI command (twgt update)',
+  'lib',
   'package-lock.json',
   'package.json',
+  'pages',
   'prisma',
   'scripts',
   'src',
   'tests',
   'tsconfig.json',
+  'twgt-dashboard',
+  'vitest.config.ts',
 ]);
 
+// PR #57 explicitly introduces these boundary surfaces and backs them with
+// ADR-0001. They are approved additions to the frozen main baseline, not
+// silently converted into the baseline itself.
+const approvedTopLevelAdditions = new Set([
+  'REPO-CONTRACT.md',
+  'activation',
+]);
+
+const topLevel = new Set(files.map((file) => file.split('/')[0]).filter(Boolean));
 for (const entry of topLevel) {
-  if (!baselineTopLevel.has(entry)) {
-    errors.push(`Unapproved top-level entry: ${entry}`);
-  }
+  if (baselineTopLevel.has(entry) || approvedTopLevelAdditions.has(entry)) continue;
+  errors.push(`Unapproved top-level entry: ${entry}`);
 }
 
 const baseRef = process.env.GITHUB_BASE_REF;
@@ -103,10 +127,23 @@ if (changed.length > 0) {
 }
 
 const activationRoot = 'activation';
-if (existsSync(activationRoot)) {
-  const allowed = new Set(['config', 'schemas', 'prompts', 'protocols', 'scripts', 'state', 'evidence', 'README.md']);
-  for (const entry of readdirSync(activationRoot)) {
-    if (!allowed.has(entry)) errors.push(`Activation boundary violation: activation/${entry}`);
+const activationAllowed = new Set([
+  'config',
+  'schemas',
+  'prompts',
+  'protocols',
+  'scripts',
+  'state',
+  'evidence',
+  'README.md',
+]);
+
+for (const file of files.filter((file) => file === activationRoot || file.startsWith(`${activationRoot}/`))) {
+  const relative = file.slice(`${activationRoot}/`.length);
+  if (!relative) continue;
+  const firstSegment = relative.split('/')[0];
+  if (!activationAllowed.has(firstSegment)) {
+    errors.push(`Activation boundary violation: ${file}`);
   }
 }
 
