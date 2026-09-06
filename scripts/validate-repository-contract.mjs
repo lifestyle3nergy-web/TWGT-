@@ -33,47 +33,40 @@ for (const file of files.filter((file) => /\.json$/i.test(file))) {
   }
 }
 
-// This list is the verified top-level tracked baseline from main.
-// Existing entries are frozen; malformed legacy entries are preserved until
-// a separate cleanup change explicitly relocates or removes them.
-const baselineTopLevel = new Set([
-  '.editorconfig',
-  '.env.example',
-  '.gitattributes',
-  '.github',
-  '.gitignore',
-  '.nvmrc',
-  '.prettierignore',
-  '.prettierrc',
-  'ARCHITECTURE.md',
-  'CHANGELOG.md',
-  'CODE_OF_CONDUCT.md',
-  'CONTRIBUTING.md',
-  'CiHealth.tsx',
-  'LICENSE',
-  'README.md',
-  'ROADMAP.md',
-  'SECURITY.md',
-  'StabilityMetrics.tsx',
-  'VISION.md',
-  'VersionHistory.tsx',
-  'cli',
-  'dashboard',
-  'docs',
-  'eslint.config.js',
-  'generate:  A GitHub Action that auto-updates dependencies  A TWGT CLI command (twgt update)',
-  'lib',
-  'package-lock.json',
-  'package.json',
-  'pages',
-  'prisma',
-  'scripts',
-  'src',
-  'tests',
-  'tsconfig.json',
-  'twgt-dashboard',
-  'vitest.config.ts',
-]);
+const baseRef = process.env.GITHUB_BASE_REF;
+let changed = [];
+let baselineTopLevel;
+
+if (baseRef) {
+  try {
+    run(['fetch', '--no-tags', '--depth=1', 'origin', baseRef]);
+  } catch {
+    // The workflow uses fetch-depth: 0, but keep the validator useful locally.
+  }
+
+  try {
+    const baselineFiles = run(['ls-tree', '-r', '--name-only', `origin/${baseRef}`])
+      .split('\n')
+      .filter(Boolean);
+    baselineTopLevel = new Set(
+      baselineFiles.map((file) => file.split('/')[0]).filter(Boolean),
+    );
+  } catch (error) {
+    errors.push(`Unable to inspect baseline tree origin/${baseRef}: ${error.message}`);
+    baselineTopLevel = new Set();
+  }
+
+  try {
+    changed = run(['diff', '--name-only', `origin/${baseRef}...HEAD`])
+      .split('\n')
+      .filter(Boolean);
+  } catch {
+    errors.push(`Unable to determine PR diff against origin/${baseRef}`);
+  }
+} else {
+  // On a non-PR invocation, the checked-out tree is the baseline.
+  baselineTopLevel = new Set(files.map((file) => file.split('/')[0]).filter(Boolean));
+}
 
 // PR #57 explicitly introduces these boundary surfaces and backs them with
 // ADR-0001. They are approved additions to the frozen main baseline, not
@@ -87,23 +80,6 @@ const topLevel = new Set(files.map((file) => file.split('/')[0]).filter(Boolean)
 for (const entry of topLevel) {
   if (baselineTopLevel.has(entry) || approvedTopLevelAdditions.has(entry)) continue;
   errors.push(`Unapproved top-level entry: ${entry}`);
-}
-
-const baseRef = process.env.GITHUB_BASE_REF;
-let changed = [];
-if (baseRef) {
-  try {
-    run(['fetch', '--no-tags', '--depth=1', 'origin', baseRef]);
-  } catch {
-    // The workflow uses fetch-depth: 0, but keep the validator useful locally.
-  }
-  try {
-    changed = run(['diff', '--name-only', `origin/${baseRef}...HEAD`])
-      .split('\n')
-      .filter(Boolean);
-  } catch {
-    errors.push(`Unable to determine PR diff against origin/${baseRef}`);
-  }
 }
 
 const structuralTriggers = [
@@ -138,9 +114,8 @@ const activationAllowed = new Set([
   'README.md',
 ]);
 
-for (const file of files.filter((file) => file === activationRoot || file.startsWith(`${activationRoot}/`))) {
+for (const file of files.filter((file) => file.startsWith(`${activationRoot}/`))) {
   const relative = file.slice(`${activationRoot}/`.length);
-  if (!relative) continue;
   const firstSegment = relative.split('/')[0];
   if (!activationAllowed.has(firstSegment)) {
     errors.push(`Activation boundary violation: ${file}`);
