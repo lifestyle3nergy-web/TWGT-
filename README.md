@@ -74,6 +74,16 @@ TWGT
 
 ---
 
+# Repository Stability
+
+TWGT maintains a strict clean-repo guarantee: **no ungoverned architectural drift, no uncontrolled runtime expansion, no conflicting capability boundaries, and no undocumented protected changes.**
+
+The repository contract is defined in `REPO-CONTRACT.md`. Structural evolution is governed by ADRs under `docs/adr/` and automated repository-contract checks in CI.
+
+Existing runtime material is part of the frozen baseline. It is not permission to introduce additional runtime surfaces without an ADR.
+
+---
+
 # Roadmap
 
 The TWGT platform is developed through interconnected repositories:
@@ -86,6 +96,8 @@ The TWGT platform is developed through interconnected repositories:
 - Platform Standards
 - Infrastructure
 - Documentation
+
+See `docs/ecosystem-map.md` for the current federation and ownership boundaries.
 
 ---
 
@@ -115,3 +127,4 @@ This repository contains the web application foundation, development configurati
 ```bash
 npm install
 npm run dev
+```
