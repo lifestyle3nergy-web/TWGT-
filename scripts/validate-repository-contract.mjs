@@ -88,14 +88,54 @@ const structuralTriggers = [
   /^docs\/governance\//,
   /^docs\/ecosystem-map\.md$/,
   /^activation\//,
-  /^package\.json$/,
   /^tsconfig(?:\..*)?\.json$/,
   /^src\/index\./,
   /^\.github\/workflows\//,
 ];
 
+const dependencyFields = new Set([
+  'dependencies',
+  'devDependencies',
+  'optionalDependencies',
+  'peerDependencies',
+  'peerDependenciesMeta',
+  'bundledDependencies',
+  'bundleDependencies',
+]);
+
+const packageJsonRequiresAdr = () => {
+  if (!baseRef || !changed.includes('package.json')) return false;
+
+  try {
+    const before = JSON.parse(run(['show', `origin/${baseRef}:package.json`]));
+    const after = JSON.parse(readFileSync('package.json', 'utf8'));
+    const keys = new Set([...Object.keys(before), ...Object.keys(after)]);
+    const changedKeys = [...keys].filter(
+      (key) => JSON.stringify(before[key]) !== JSON.stringify(after[key]),
+    );
+    const nonDependencyChanges = changedKeys.filter((key) => !dependencyFields.has(key));
+
+    if (nonDependencyChanges.length === 0) {
+      console.log(
+        `Dependency-only package.json change: ${changedKeys.join(', ') || 'none'}`,
+      );
+      return false;
+    }
+
+    console.log(
+      `Structural package.json fields changed: ${nonDependencyChanges.join(', ')}`,
+    );
+    return true;
+  } catch (error) {
+    errors.push(`Unable to classify package.json change: ${error.message}`);
+    return true;
+  }
+};
+
 if (changed.length > 0) {
-  const requiresAdr = changed.some((path) => structuralTriggers.some((pattern) => pattern.test(path)));
+  const requiresAdr =
+    changed.some((path) => structuralTriggers.some((pattern) => pattern.test(path))) ||
+    packageJsonRequiresAdr();
   const hasAdr = changed.some((path) => /^docs\/adr\/\d{4}-.+\.md$/.test(path));
   if (requiresAdr && !hasAdr) {
     errors.push('Protected structural change detected without a numbered ADR in docs/adr/.');
