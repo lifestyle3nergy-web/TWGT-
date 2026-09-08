@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import { createHash, generateKeyPairSync } from 'node:crypto';
 import { mkdtempSync, mkdirSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
@@ -17,9 +18,7 @@ function runVerifier(evidence, key = 'REPLACE_WITH_TEAM_ISSUED_BOOTSTRAP_VERIFIE
   writeFileSync(join(activation, 'schemas/bootstrap.schema.json'), JSON.stringify({
     type: 'object',
     required: ['commit', 'rollbackPin', 'repository', 'digests', 'signature'],
-    properties: {
-      commit: {}, rollbackPin: {}, repository: {}, digests: {}, signature: {},
-    },
+    properties: { commit: {}, rollbackPin: {}, repository: {}, digests: {}, signature: {} },
     additionalProperties: false,
   }));
   writeFileSync(join(activation, 'evidence/bootstrap.json'), JSON.stringify(evidence));
@@ -67,18 +66,14 @@ test('rejects invalid digest format', () => {
 });
 
 test('rejects placeholder verifier key', () => {
-  const result = runVerifier({
-    ...base,
-    digests: { 'catalog.yaml': '0'.repeat(64) },
-  });
+  const result = runVerifier({ ...base, digests: { 'catalog.yaml': '0'.repeat(64) } });
   assert.notEqual(result.status, 0);
 });
 
-test('rejects undefined signature scheme', () => {
+test('rejects undefined signature scheme even with an otherwise valid key and digest', () => {
   const root = mkdtempSync(join(tmpdir(), 'twgt-bootstrap-test-'));
   const artifact = join(root, 'catalog.yaml');
   writeFileSync(artifact, 'catalog: test\n');
-  const { createHash, generateKeyPairSync } = await import('node:crypto');
   const { publicKey } = generateKeyPairSync('ed25519');
   const digest = createHash('sha256').update('catalog: test\n').digest('hex');
   const result = runVerifier({
