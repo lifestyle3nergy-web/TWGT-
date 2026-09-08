@@ -1,0 +1,159 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://lifestyle3nergy-web.github.io/TWGT-/schema/btc-001.schema.json",
+  "title": "BTC-001 Governance Trust Contract Schema",
+  "description": "Validates the structure and required fields of BTC-001.yaml",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["btc-001"],
+  "properties": {
+    "btc-001": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "version",
+        "effective_date",
+        "authority",
+        "description",
+        "nucleus",
+        "rollback",
+        "crypto",
+        "authority_state",
+        "evidence_state",
+        "rule_state",
+        "context",
+        "admissibility",
+        "execution_eligibility",
+        "continuity",
+        "recomputation",
+        "replay",
+        "external_standards"
+      ],
+      "properties": {
+        "version": { "type": "string", "pattern": "^\\d+\\.\\d+\\.\\d+$" },
+        "effective_date": { "type": "string", "format": "date" },
+        "authority": {
+          "type": "object",
+          "required": ["document", "date"],
+          "properties": {
+            "document": { "type": "string" },
+            "date": { "type": "string", "format": "date" }
+          }
+        },
+        "description": { "type": "string" },
+        "nucleus": {
+          "type": "object",
+          "required": ["repository", "commit"],
+          "properties": {
+            "repository": { "type": "string" },
+            "commit": { "type": "string", "pattern": "^[a-fA-F0-9]{40}$" }
+          }
+        },
+        "rollback": {
+          "type": "object",
+          "required": ["pin"],
+          "properties": {
+            "pin": {
+              "type": "object",
+              "required": ["commit"],
+              "properties": {
+                "commit": { "type": "string", "pattern": "^[a-fA-F0-9]{40}$" }
+              }
+            }
+          }
+        },
+        "crypto": {
+          "type": "object",
+          "required": ["signature", "digest", "canonicalization"],
+          "properties": {
+            "signature": {
+              "type": "object",
+              "required": ["algorithm", "encoding", "public_key"],
+              "properties": {
+                "algorithm": { "type": "string" },
+                "encoding": { "type": "string" },
+                "public_key": { "type": "string", "minLength": 1 }
+              }
+            },
+            "digest": {
+              "type": "object",
+              "required": ["algorithm"],
+              "properties": { "algorithm": { "type": "string" } }
+            },
+            "canonicalization": {
+              "type": "object",
+              "required": ["method"],
+              "properties": { "method": { "type": "string" } }
+            }
+          }
+        },
+        "authority_state": {
+          "type": "object",
+          "required": ["subject", "action", "scope", "constraints", "validity", "revocation", "verification"],
+          "properties": {
+            "subject": { "type": "object", "required": ["type", "id"] },
+            "action": { "type": "object", "required": ["type", "id"] },
+            "scope": { "type": "object" },
+            "constraints": { "type": "array" },
+            "validity": { "type": "object", "required": ["issued_at", "expires_at"] },
+            "revocation": { "type": "object", "required": ["status"] },
+            "verification": { "type": "object", "required": ["result"] }
+          }
+        },
+        "evidence_state": {
+          "type": "object",
+          "required": ["required", "supplied", "sufficiency"],
+          "properties": {
+            "required": { "type": "array" },
+            "supplied": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "required": ["artifact", "digest", "provenance"]
+              }
+            },
+            "sufficiency": { "type": "object", "required": ["result"] }
+          }
+        },
+        "rule_state": {
+          "type": "object",
+          "required": ["rule_set_id", "schema_version", "policy_version", "policy_digest", "precedence_version", "evaluator_version"]
+        },
+        "context": {
+          "type": "object",
+          "required": ["context_id", "subject", "objective", "scope", "constraints", "dependencies", "state", "provenance"]
+        },
+        "admissibility": {
+          "type": "object",
+          "required": ["decision", "authority_state", "evidence_state", "rule_state", "context_state", "criteria", "evaluator", "evaluated_at", "determination_id"]
+        },
+        "execution_eligibility": {
+          "type": "object",
+          "required": ["decision", "admissibility_ref", "execution_boundary", "effective_at", "expiry", "revocation_state", "enforcement_required"]
+        },
+        "continuity": {
+          "type": "object",
+          "required": ["prior_state", "material_change", "revocation", "expiration", "dependency_change", "re_evaluation"]
+        },
+        "recomputation": {
+          "type": "object",
+          "required": ["supported", "input_state_identifiable", "rule_state_identifiable", "context_identifiable", "evaluator_identifiable"]
+        },
+        "replay": {
+          "type": "object",
+          "required": ["supported", "historical_state_retained", "deterministic_inputs"]
+        },
+        "external_standards": {
+          "type": "object",
+          "required": ["trust_state"],
+          "properties": {
+            "trust_state": {
+              "type": "object",
+              "required": ["standard", "relationship", "conformance_claim"]
+            }
+          }
+        }
+      }
+    }
+  }
+}
