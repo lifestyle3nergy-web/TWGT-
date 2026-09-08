@@ -1,11 +1,13 @@
 # BTC-001.yaml
 # Governance Trust Contract for TWGT
+# Contract status: configured / bootstrap values pending
 # Effective: 2026-09-08
 # Authority: ADR-0001 (Stable Repository Boundary)
 
 btc-001:
   version: "1.0.0"
-  effective_date: "2026-09-08"                     # CHANGE_ME: set to actual activation date
+  effective_date: "2026-09-08"
+  status: "configured"
   authority:
     document: "ADR-0001"
     date: "2026-09-07"
@@ -14,66 +16,99 @@ btc-001:
   # --- Identity & Integrity ---
   nucleus:
     repository: "lifestyle3nergy-web/TWGT-"
-    commit: "CHANGE_ME"                            # Must be a full 40‑char Git SHA
+    commit: "CHANGE_ME"                            # Bootstrap value: full 40-char Git SHA
 
   rollback:
     pin:
-      commit: "CHANGE_ME"                          # Known‑good fallback commit SHA
+      commit: "CHANGE_ME"                          # Bootstrap value: known-good fallback commit SHA
 
+  # --- Cryptographic Contract ---
   crypto:
     signature:
-      algorithm: "Ed25519"                         # Candidate – governance decision pending
-      encoding: "base64"                           # Candidate – governance decision pending
-      public_key: "CHANGE_ME"                      # Base64‑encoded Ed25519 public key
+      algorithm: "Ed25519"
+      public_key_representation: "raw-32-byte"
+      public_key_encoding: "base64"
+      signature_representation: "raw-64-byte"
+      signature_encoding: "base64"
+      key_id: "btc-001-root-v1"
+      public_key: "CHANGE_ME"                      # Base64 encoding of exactly 32 raw Ed25519 public-key bytes
+      private_key: "external-secure-storage"       # Never stored in repository or supplied to verifier as an artifact
+      ownership: "TWGT-BTC-001-ROOT"
+      authority_role: "BTC-001 Root Signing Authority"
+      purpose: "Authorize BTC-001 trust-state transitions and governance artifacts within the declared scope."
+      validity:
+        issued_at: "CHANGE_ME"
+        expires_at: "CHANGE_ME"
+      rotation:
+        policy: "explicit-signed-successor"
+        successor_key_required: true
+        overlap_allowed: false
+      revocation:
+        supported: true
+        mechanism: "signed-revocation-state"
+        effective_at: "CHANGE_ME"
+        status: "not-revoked"
     digest:
       algorithm: "SHA-256"
+      output_encoding: "lowercase-hex"
     canonicalization:
       method: "RFC 8785 JCS"
+      payload_type: "canonical-json"
+      signed_bytes: "JCS-UTF8-bytes"
+    signed_payload:
+      excludes:
+        - "signature"
+      includes:
+        - "btc-001"
+      detached_signature: true
+      signing_order:
+        - "construct canonical payload"
+        - "serialize with RFC 8785 JCS"
+        - "encode canonical JSON as UTF-8"
+        - "sign UTF-8 bytes with Ed25519 private key"
+        - "encode 64-byte signature as base64"
 
   # --- Authority State ---
   authority_state:
     subject:
-      type: "CHANGE_ME"                            # e.g. "user", "service", "role"
-      id: "CHANGE_ME"
+      type: "key"
+      id: "btc-001-root-v1"
     action:
-      type: "CHANGE_ME"                            # e.g. "deploy", "sign", "approve"
+      type: "governance"
       id: "CHANGE_ME"
     scope:
       repositories: []
       artifacts: []
     constraints: []
     validity:
-      issued_at: "CHANGE_ME"                       # ISO 8601 timestamp
+      issued_at: "CHANGE_ME"
       expires_at: "CHANGE_ME"
     revocation:
-      status: "active"                             # active | revoked | suspended
+      status: "active"
     verification:
-      result: "CHANGE_ME"                          # e.g. "passed", "failed"
+      result: "indeterminate"
 
   # --- Evidence State ---
   evidence_state:
     required: []
-    supplied:
-      - artifact: "CHANGE_ME"
-        digest: "CHANGE_ME"                        # SHA‑256 of artifact
-        provenance: "CHANGE_ME"                    # e.g. workflow run URL
+    supplied: []
     sufficiency:
-      result: "CHANGE_ME"                          # sufficient | insufficient
+      result: "indeterminate"
 
   # --- Rule State ---
   rule_state:
-    rule_set_id: "CHANGE_ME"                       # e.g. "twgt-governance-rules"
-    schema_version: "CHANGE_ME"                    # e.g. "v1"
-    policy_version: "CHANGE_ME"                    # e.g. "2026-09-07"
-    policy_digest: "CHANGE_ME"                     # SHA‑256 of the policy file(s)
-    precedence_version: "CHANGE_ME"                # e.g. "1.0"
-    evaluator_version: "CHANGE_ME"                 # e.g. "opav1.0"
+    rule_set_id: "twgt-governance-rules"
+    schema_version: "CHANGE_ME"
+    policy_version: "CHANGE_ME"
+    policy_digest: "CHANGE_ME"
+    precedence_version: "CHANGE_ME"
+    evaluator_version: "CHANGE_ME"
 
   # --- Context ---
   context:
     context_id: "CHANGE_ME"
-    subject: "CHANGE_ME"
-    objective: "CHANGE_ME"
+    subject: "TWGT"
+    objective: "Bootstrap and verify the TWGT governance trust state."
     scope: {}
     constraints: {}
     dependencies: {}
@@ -82,24 +117,24 @@ btc-001:
 
   # --- Admissibility ---
   admissibility:
-    decision: "indeterminate"                      # admissible | inadmissible | indeterminate
-    authority_state: "CHANGE_ME"                   # reference to authority_state
-    evidence_state: "CHANGE_ME"                    # reference to evidence_state
-    rule_state: "CHANGE_ME"                        # reference to rule_state
-    context_state: "CHANGE_ME"                     # reference to context
+    decision: "indeterminate"
+    authority_state: "authority_state"
+    evidence_state: "evidence_state"
+    rule_state: "rule_state"
+    context_state: "context"
     criteria: []
     evaluator: "CHANGE_ME"
-    evaluated_at: "CHANGE_ME"                      # ISO 8601
-    determination_id: "CHANGE_ME"                  # UUID or deterministic hash
+    evaluated_at: "CHANGE_ME"
+    determination_id: "CHANGE_ME"
 
   # --- Execution Eligibility ---
   execution_eligibility:
-    decision: "indeterminate"                      # eligible | ineligible | indeterminate
-    admissibility_ref: "CHANGE_ME"
+    decision: "indeterminate"
+    admissibility_ref: "admissibility"
     execution_boundary: "CHANGE_ME"
     effective_at: "CHANGE_ME"
     expiry: "CHANGE_ME"
-    revocation_state: "CHANGE_ME"
+    revocation_state: "authority_state.revocation"
     enforcement_required: true
 
   # --- Continuity ---
@@ -134,5 +169,5 @@ btc-001:
   external_standards:
     trust_state:
       standard: "TSS-2026-v2.5.1"
-      relationship: "reference"                   # not a conformance claim
+      relationship: "reference"
       conformance_claim: false
