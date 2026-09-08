@@ -1,0 +1,138 @@
+# BTC-001.yaml
+# Governance Trust Contract for TWGT
+# Effective: 2026-09-08
+# Authority: ADR-0001 (Stable Repository Boundary)
+
+btc-001:
+  version: "1.0.0"
+  effective_date: "2026-09-08"                     # CHANGE_ME: set to actual activation date
+  authority:
+    document: "ADR-0001"
+    date: "2026-09-07"
+  description: "BTC-001 Governance Trust Contract for TWGT – defines identity, integrity, authority, evidence, rules, admissibility, execution eligibility, continuity, and replayability."
+
+  # --- Identity & Integrity ---
+  nucleus:
+    repository: "lifestyle3nergy-web/TWGT-"
+    commit: "CHANGE_ME"                            # Must be a full 40‑char Git SHA
+
+  rollback:
+    pin:
+      commit: "CHANGE_ME"                          # Known‑good fallback commit SHA
+
+  crypto:
+    signature:
+      algorithm: "Ed25519"                         # Candidate – governance decision pending
+      encoding: "base64"                           # Candidate – governance decision pending
+      public_key: "CHANGE_ME"                      # Base64‑encoded Ed25519 public key
+    digest:
+      algorithm: "SHA-256"
+    canonicalization:
+      method: "RFC 8785 JCS"
+
+  # --- Authority State ---
+  authority_state:
+    subject:
+      type: "CHANGE_ME"                            # e.g. "user", "service", "role"
+      id: "CHANGE_ME"
+    action:
+      type: "CHANGE_ME"                            # e.g. "deploy", "sign", "approve"
+      id: "CHANGE_ME"
+    scope:
+      repositories: []
+      artifacts: []
+    constraints: []
+    validity:
+      issued_at: "CHANGE_ME"                       # ISO 8601 timestamp
+      expires_at: "CHANGE_ME"
+    revocation:
+      status: "active"                             # active | revoked | suspended
+    verification:
+      result: "CHANGE_ME"                          # e.g. "passed", "failed"
+
+  # --- Evidence State ---
+  evidence_state:
+    required: []
+    supplied:
+      - artifact: "CHANGE_ME"
+        digest: "CHANGE_ME"                        # SHA‑256 of artifact
+        provenance: "CHANGE_ME"                    # e.g. workflow run URL
+    sufficiency:
+      result: "CHANGE_ME"                          # sufficient | insufficient
+
+  # --- Rule State ---
+  rule_state:
+    rule_set_id: "CHANGE_ME"                       # e.g. "twgt-governance-rules"
+    schema_version: "CHANGE_ME"                    # e.g. "v1"
+    policy_version: "CHANGE_ME"                    # e.g. "2026-09-07"
+    policy_digest: "CHANGE_ME"                     # SHA‑256 of the policy file(s)
+    precedence_version: "CHANGE_ME"                # e.g. "1.0"
+    evaluator_version: "CHANGE_ME"                 # e.g. "opav1.0"
+
+  # --- Context ---
+  context:
+    context_id: "CHANGE_ME"
+    subject: "CHANGE_ME"
+    objective: "CHANGE_ME"
+    scope: {}
+    constraints: {}
+    dependencies: {}
+    state: {}
+    provenance: "CHANGE_ME"
+
+  # --- Admissibility ---
+  admissibility:
+    decision: "indeterminate"                      # admissible | inadmissible | indeterminate
+    authority_state: "CHANGE_ME"                   # reference to authority_state
+    evidence_state: "CHANGE_ME"                    # reference to evidence_state
+    rule_state: "CHANGE_ME"                        # reference to rule_state
+    context_state: "CHANGE_ME"                     # reference to context
+    criteria: []
+    evaluator: "CHANGE_ME"
+    evaluated_at: "CHANGE_ME"                      # ISO 8601
+    determination_id: "CHANGE_ME"                  # UUID or deterministic hash
+
+  # --- Execution Eligibility ---
+  execution_eligibility:
+    decision: "indeterminate"                      # eligible | ineligible | indeterminate
+    admissibility_ref: "CHANGE_ME"
+    execution_boundary: "CHANGE_ME"
+    effective_at: "CHANGE_ME"
+    expiry: "CHANGE_ME"
+    revocation_state: "CHANGE_ME"
+    enforcement_required: true
+
+  # --- Continuity ---
+  continuity:
+    prior_state: "CHANGE_ME"
+    material_change:
+      detected: false
+      changes: []
+    revocation:
+      detected: false
+    expiration:
+      detected: false
+    dependency_change:
+      detected: false
+    re_evaluation:
+      required: false
+
+  # --- Recomputation / Replay ---
+  recomputation:
+    supported: true
+    input_state_identifiable: true
+    rule_state_identifiable: true
+    context_identifiable: true
+    evaluator_identifiable: true
+
+  replay:
+    supported: true
+    historical_state_retained: true
+    deterministic_inputs: true
+
+  # --- External Standards ---
+  external_standards:
+    trust_state:
+      standard: "TSS-2026-v2.5.1"
+      relationship: "reference"                   # not a conformance claim
+      conformance_claim: false
