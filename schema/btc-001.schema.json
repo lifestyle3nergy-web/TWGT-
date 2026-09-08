@@ -2,7 +2,7 @@
   "$schema": "http://json-schema.org/draft-07/schema#",
   "$id": "https://lifestyle3nergy-web.github.io/TWGT-/schema/btc-001.schema.json",
   "title": "BTC-001 Governance Trust Contract Schema",
-  "description": "Validates the structure and required fields of BTC-001.yaml",
+  "description": "Structural and semantic schema for the TWGT Bootstrap Trust Contract.",
   "type": "object",
   "additionalProperties": false,
   "required": ["btc-001"],
@@ -11,84 +11,124 @@
       "type": "object",
       "additionalProperties": false,
       "required": [
-        "version",
-        "effective_date",
-        "authority",
-        "description",
-        "nucleus",
-        "rollback",
-        "crypto",
-        "authority_state",
-        "evidence_state",
-        "rule_state",
-        "context",
-        "admissibility",
-        "execution_eligibility",
-        "continuity",
-        "recomputation",
-        "replay",
-        "external_standards"
+        "version", "effective_date", "status", "authority", "description",
+        "nucleus", "rollback", "crypto", "authority_state", "evidence_state",
+        "rule_state", "context", "admissibility", "execution_eligibility",
+        "continuity", "recomputation", "replay", "external_standards"
       ],
       "properties": {
         "version": { "type": "string", "pattern": "^\\d+\\.\\d+\\.\\d+$" },
         "effective_date": { "type": "string", "format": "date" },
+        "status": { "type": "string", "enum": ["configured", "active", "revoked", "superseded"] },
         "authority": {
-          "type": "object",
+          "type": "object", "additionalProperties": false,
           "required": ["document", "date"],
           "properties": {
-            "document": { "type": "string" },
+            "document": { "type": "string", "minLength": 1 },
             "date": { "type": "string", "format": "date" }
           }
         },
-        "description": { "type": "string" },
+        "description": { "type": "string", "minLength": 1 },
         "nucleus": {
-          "type": "object",
+          "type": "object", "additionalProperties": false,
           "required": ["repository", "commit"],
           "properties": {
-            "repository": { "type": "string" },
-            "commit": { "type": "string", "pattern": "^[a-fA-F0-9]{40}$" }
+            "repository": { "type": "string", "minLength": 1 },
+            "commit": { "type": "string", "pattern": "^[a-fA-F0-9]{40}$|^CHANGE_ME$" }
           }
         },
         "rollback": {
-          "type": "object",
+          "type": "object", "additionalProperties": false,
           "required": ["pin"],
           "properties": {
             "pin": {
-              "type": "object",
+              "type": "object", "additionalProperties": false,
               "required": ["commit"],
               "properties": {
-                "commit": { "type": "string", "pattern": "^[a-fA-F0-9]{40}$" }
+                "commit": { "type": "string", "pattern": "^[a-fA-F0-9]{40}$|^CHANGE_ME$" }
               }
             }
           }
         },
         "crypto": {
-          "type": "object",
-          "required": ["signature", "digest", "canonicalization"],
+          "type": "object", "additionalProperties": false,
+          "required": ["signature", "digest", "canonicalization", "signed_payload"],
           "properties": {
             "signature": {
-              "type": "object",
-              "required": ["algorithm", "encoding", "public_key"],
+              "type": "object", "additionalProperties": false,
+              "required": ["algorithm", "public_key_representation", "public_key_encoding", "signature_representation", "signature_encoding", "key_id", "public_key", "private_key", "ownership", "authority_role", "purpose", "validity", "rotation", "revocation"],
               "properties": {
-                "algorithm": { "type": "string" },
-                "encoding": { "type": "string" },
-                "public_key": { "type": "string", "minLength": 1 }
+                "algorithm": { "const": "Ed25519" },
+                "public_key_representation": { "const": "raw-32-byte" },
+                "public_key_encoding": { "const": "base64" },
+                "signature_representation": { "const": "raw-64-byte" },
+                "signature_encoding": { "const": "base64" },
+                "key_id": { "type": "string", "pattern": "^btc-001-root-[A-Za-z0-9._-]+$" },
+                "public_key": { "type": "string", "pattern": "^(CHANGE_ME|[A-Za-z0-9+/]{43}=)$" },
+                "private_key": { "const": "external-secure-storage" },
+                "ownership": { "type": "string", "minLength": 1 },
+                "authority_role": { "type": "string", "minLength": 1 },
+                "purpose": { "type": "string", "minLength": 1 },
+                "validity": {
+                  "type": "object", "additionalProperties": false,
+                  "required": ["issued_at", "expires_at"],
+                  "properties": {
+                    "issued_at": { "type": "string", "minLength": 1 },
+                    "expires_at": { "type": "string", "minLength": 1 }
+                  }
+                },
+                "rotation": {
+                  "type": "object", "additionalProperties": false,
+                  "required": ["policy", "successor_key_required", "overlap_allowed"],
+                  "properties": {
+                    "policy": { "const": "explicit-signed-successor" },
+                    "successor_key_required": { "const": true },
+                    "overlap_allowed": { "const": false }
+                  }
+                },
+                "revocation": {
+                  "type": "object", "additionalProperties": false,
+                  "required": ["supported", "mechanism", "effective_at", "status"],
+                  "properties": {
+                    "supported": { "const": true },
+                    "mechanism": { "const": "signed-revocation-state" },
+                    "effective_at": { "type": "string", "minLength": 1 },
+                    "status": { "enum": ["not-revoked", "revoked", "suspended"] }
+                  }
+                }
               }
             },
             "digest": {
-              "type": "object",
-              "required": ["algorithm"],
-              "properties": { "algorithm": { "type": "string" } }
+              "type": "object", "additionalProperties": false,
+              "required": ["algorithm", "output_encoding"],
+              "properties": {
+                "algorithm": { "const": "SHA-256" },
+                "output_encoding": { "const": "lowercase-hex" }
+              }
             },
             "canonicalization": {
-              "type": "object",
-              "required": ["method"],
-              "properties": { "method": { "type": "string" } }
+              "type": "object", "additionalProperties": false,
+              "required": ["method", "payload_type", "signed_bytes"],
+              "properties": {
+                "method": { "const": "RFC 8785 JCS" },
+                "payload_type": { "const": "canonical-json" },
+                "signed_bytes": { "const": "JCS-UTF8-bytes" }
+              }
+            },
+            "signed_payload": {
+              "type": "object", "additionalProperties": false,
+              "required": ["excludes", "includes", "detached_signature", "signing_order"],
+              "properties": {
+                "excludes": { "type": "array", "const": ["signature"] },
+                "includes": { "type": "array", "const": ["btc-001"] },
+                "detached_signature": { "const": true },
+                "signing_order": { "type": "array", "minItems": 5 }
+              }
             }
           }
         },
         "authority_state": {
-          "type": "object",
+          "type": "object", "additionalProperties": false,
           "required": ["subject", "action", "scope", "constraints", "validity", "revocation", "verification"],
           "properties": {
             "subject": { "type": "object", "required": ["type", "id"] },
@@ -101,55 +141,112 @@
           }
         },
         "evidence_state": {
-          "type": "object",
+          "type": "object", "additionalProperties": false,
           "required": ["required", "supplied", "sufficiency"],
           "properties": {
             "required": { "type": "array" },
-            "supplied": {
-              "type": "array",
-              "items": {
-                "type": "object",
-                "required": ["artifact", "digest", "provenance"]
-              }
-            },
+            "supplied": { "type": "array", "items": { "type": "object", "required": ["artifact", "digest", "provenance"] } },
             "sufficiency": { "type": "object", "required": ["result"] }
           }
         },
         "rule_state": {
-          "type": "object",
-          "required": ["rule_set_id", "schema_version", "policy_version", "policy_digest", "precedence_version", "evaluator_version"]
+          "type": "object", "additionalProperties": false,
+          "required": ["rule_set_id", "schema_version", "policy_version", "policy_digest", "precedence_version", "evaluator_version"],
+          "properties": {
+            "rule_set_id": { "type": "string", "minLength": 1 },
+            "schema_version": { "type": "string", "minLength": 1 },
+            "policy_version": { "type": "string", "minLength": 1 },
+            "policy_digest": { "type": "string", "pattern": "^[a-fA-F0-9]{64}$|^CHANGE_ME$" },
+            "precedence_version": { "type": "string", "minLength": 1 },
+            "evaluator_version": { "type": "string", "minLength": 1 }
+          }
         },
         "context": {
-          "type": "object",
-          "required": ["context_id", "subject", "objective", "scope", "constraints", "dependencies", "state", "provenance"]
+          "type": "object", "additionalProperties": false,
+          "required": ["context_id", "subject", "objective", "scope", "constraints", "dependencies", "state", "provenance"],
+          "properties": {
+            "context_id": { "type": "string", "minLength": 1 },
+            "subject": { "type": "string", "minLength": 1 },
+            "objective": { "type": "string", "minLength": 1 },
+            "scope": { "type": "object" },
+            "constraints": { "type": "object" },
+            "dependencies": { "type": "object" },
+            "state": { "type": "object" },
+            "provenance": { "type": "string", "minLength": 1 }
+          }
         },
         "admissibility": {
-          "type": "object",
-          "required": ["decision", "authority_state", "evidence_state", "rule_state", "context_state", "criteria", "evaluator", "evaluated_at", "determination_id"]
+          "type": "object", "additionalProperties": false,
+          "required": ["decision", "authority_state", "evidence_state", "rule_state", "context_state", "criteria", "evaluator", "evaluated_at", "determination_id"],
+          "properties": {
+            "decision": { "enum": ["admissible", "inadmissible", "indeterminate"] },
+            "authority_state": { "type": "string", "minLength": 1 },
+            "evidence_state": { "type": "string", "minLength": 1 },
+            "rule_state": { "type": "string", "minLength": 1 },
+            "context_state": { "type": "string", "minLength": 1 },
+            "criteria": { "type": "array" },
+            "evaluator": { "type": "string", "minLength": 1 },
+            "evaluated_at": { "type": "string", "minLength": 1 },
+            "determination_id": { "type": "string", "minLength": 1 }
+          }
         },
         "execution_eligibility": {
-          "type": "object",
-          "required": ["decision", "admissibility_ref", "execution_boundary", "effective_at", "expiry", "revocation_state", "enforcement_required"]
+          "type": "object", "additionalProperties": false,
+          "required": ["decision", "admissibility_ref", "execution_boundary", "effective_at", "expiry", "revocation_state", "enforcement_required"],
+          "properties": {
+            "decision": { "enum": ["eligible", "ineligible", "indeterminate"] },
+            "admissibility_ref": { "type": "string", "minLength": 1 },
+            "execution_boundary": { "type": "string", "minLength": 1 },
+            "effective_at": { "type": "string", "minLength": 1 },
+            "expiry": { "type": "string", "minLength": 1 },
+            "revocation_state": { "type": "string", "minLength": 1 },
+            "enforcement_required": { "const": true }
+          }
         },
         "continuity": {
-          "type": "object",
-          "required": ["prior_state", "material_change", "revocation", "expiration", "dependency_change", "re_evaluation"]
+          "type": "object", "additionalProperties": false,
+          "required": ["prior_state", "material_change", "revocation", "expiration", "dependency_change", "re_evaluation"],
+          "properties": {
+            "prior_state": { "type": "string", "minLength": 1 },
+            "material_change": { "type": "object", "required": ["detected", "changes"] },
+            "revocation": { "type": "object", "required": ["detected"] },
+            "expiration": { "type": "object", "required": ["detected"] },
+            "dependency_change": { "type": "object", "required": ["detected"] },
+            "re_evaluation": { "type": "object", "required": ["required"] }
+          }
         },
         "recomputation": {
-          "type": "object",
-          "required": ["supported", "input_state_identifiable", "rule_state_identifiable", "context_identifiable", "evaluator_identifiable"]
+          "type": "object", "additionalProperties": false,
+          "required": ["supported", "input_state_identifiable", "rule_state_identifiable", "context_identifiable", "evaluator_identifiable"],
+          "properties": {
+            "supported": { "const": true },
+            "input_state_identifiable": { "const": true },
+            "rule_state_identifiable": { "const": true },
+            "context_identifiable": { "const": true },
+            "evaluator_identifiable": { "const": true }
+          }
         },
         "replay": {
-          "type": "object",
-          "required": ["supported", "historical_state_retained", "deterministic_inputs"]
+          "type": "object", "additionalProperties": false,
+          "required": ["supported", "historical_state_retained", "deterministic_inputs"],
+          "properties": {
+            "supported": { "const": true },
+            "historical_state_retained": { "const": true },
+            "deterministic_inputs": { "const": true }
+          }
         },
         "external_standards": {
-          "type": "object",
+          "type": "object", "additionalProperties": false,
           "required": ["trust_state"],
           "properties": {
             "trust_state": {
-              "type": "object",
-              "required": ["standard", "relationship", "conformance_claim"]
+              "type": "object", "additionalProperties": false,
+              "required": ["standard", "relationship", "conformance_claim"],
+              "properties": {
+                "standard": { "const": "TSS-2026-v2.5.1" },
+                "relationship": { "const": "reference" },
+                "conformance_claim": { "const": false }
+              }
             }
           }
         }
