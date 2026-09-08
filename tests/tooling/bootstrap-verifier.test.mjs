@@ -16,13 +16,6 @@ function runVerifier(evidence, key = 'REPLACE_WITH_TEAM_ISSUED_BOOTSTRAP_VERIFIE
   const activation = join(root, 'activation');
   mkdirSync(join(activation, 'evidence'), { recursive: true });
   mkdirSync(join(activation, 'keys'), { recursive: true });
-  mkdirSync(join(activation, 'schemas'), { recursive: true });
-  writeFileSync(join(activation, 'schemas/bootstrap.schema.json'), JSON.stringify({
-    type: 'object',
-    required: ['commit', 'rollbackPin', 'repository', 'digests', 'signature'],
-    properties: { commit: {}, rollbackPin: {}, repository: {}, digests: {}, signature: {} },
-    additionalProperties: false,
-  }));
   writeFileSync(join(activation, 'evidence/bootstrap.json'), JSON.stringify(evidence));
   writeFileSync(join(activation, 'keys/bootstrap-verifier.pub'), key);
   writeFileSync(join(root, 'catalog.yaml'), artifactContent);
@@ -40,9 +33,13 @@ function runVerifier(evidence, key = 'REPLACE_WITH_TEAM_ISSUED_BOOTSTRAP_VERIFIE
 }
 
 const base = {
+  schemaVersion: '1',
   commit: '0123456789abcdef0123456789abcdef01234567',
   rollbackPin: '89abcdef0123456789abcdef0123456789abcdef',
   repository: 'lifestyle3nergy-web/TWGT-',
+  nucleusId: 'twgt-control-nucleus',
+  nucleusTag: 'v1.0.0-beta.1',
+  nucleusVersion: '1.0.0-beta.1',
   digests: {},
   signature: { algorithm: 'TEAM_DEFINED', value: 'signature' },
 };
