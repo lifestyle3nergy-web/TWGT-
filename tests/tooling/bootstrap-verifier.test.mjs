@@ -8,6 +8,8 @@ import test from 'node:test';
 
 const repoRoot = process.cwd();
 const verifier = join(repoRoot, 'activation/scripts/verify-bootstrap-evidence.mjs');
+const artifactContent = 'catalog: test\n';
+const artifactDigest = createHash('sha256').update(artifactContent).digest('hex');
 
 function runVerifier(evidence, key = 'REPLACE_WITH_TEAM_ISSUED_BOOTSTRAP_VERIFIER_PUBLIC_KEY') {
   const root = mkdtempSync(join(tmpdir(), 'twgt-bootstrap-test-'));
@@ -23,7 +25,7 @@ function runVerifier(evidence, key = 'REPLACE_WITH_TEAM_ISSUED_BOOTSTRAP_VERIFIE
   }));
   writeFileSync(join(activation, 'evidence/bootstrap.json'), JSON.stringify(evidence));
   writeFileSync(join(activation, 'keys/bootstrap-verifier.pub'), key);
-  writeFileSync(join(root, 'catalog.yaml'), 'catalog: test\n');
+  writeFileSync(join(root, 'catalog.yaml'), artifactContent);
   return spawnSync(process.execPath, [verifier], {
     cwd: repoRoot,
     env: {
@@ -66,19 +68,20 @@ test('rejects invalid digest format', () => {
 });
 
 test('rejects placeholder verifier key', () => {
+  const result = runVerifier({ ...base, digests: { 'catalog.yaml': artifactDigest } });
+  assert.notEqual(result.status, 0);
+});
+
+test('rejects digest mismatch', () => {
   const result = runVerifier({ ...base, digests: { 'catalog.yaml': '0'.repeat(64) } });
   assert.notEqual(result.status, 0);
 });
 
-test('rejects undefined signature scheme even with an otherwise valid key and digest', () => {
-  const root = mkdtempSync(join(tmpdir(), 'twgt-bootstrap-test-'));
-  const artifact = join(root, 'catalog.yaml');
-  writeFileSync(artifact, 'catalog: test\n');
+test('rejects undefined signature scheme after valid key and digest checks', () => {
   const { publicKey } = generateKeyPairSync('ed25519');
-  const digest = createHash('sha256').update('catalog: test\n').digest('hex');
   const result = runVerifier({
     ...base,
-    digests: { 'catalog.yaml': digest },
+    digests: { 'catalog.yaml': artifactDigest },
     signature: { algorithm: 'ED25519', value: 'ZmFrZQ==' },
   }, publicKey.export({ type: 'spki', format: 'pem' }));
   assert.notEqual(result.status, 0);
