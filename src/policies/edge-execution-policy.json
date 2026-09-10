@@ -16,6 +16,9 @@
     ]
   },
   "network": {
+    "metered": {
+      "deferBandwidthCost": ["high"]
+    },
     "wifi": {
       "allow": ["repository.clone", "dependency.install", "sync.large", "model.download", "backup", "artifact.download"]
     },
