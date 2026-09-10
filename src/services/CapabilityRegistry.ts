@@ -7,6 +7,8 @@ import type {
 
 const VALID_LEVELS = new Set(['low', 'medium', 'high']);
 const VALID_COST_CLASSES = new Set(['free', 'low', 'variable', 'premium']);
+const VALID_PRIVACY_CLASSES = new Set(['local', 'trusted-cloud', 'public']);
+const VALID_NETWORKS = new Set(['wifi', 'mobile', 'offline']);
 const MOBILE_DEFERRED_CAPABILITIES = new Set([
   'container.pull',
   'repository.clone.large',
@@ -43,16 +45,20 @@ export class CapabilityRegistry {
   resolve(task: TwgtTask, context: ExecutionContext): ResolvedComponent[] {
     this.validateTask(task);
     this.validateContext(context);
+    for (const component of this.components.values()) this.validateComponent(component);
     const required = new Set(task.requires ?? []);
 
     return this.list()
       .filter((component) => component.invocation.routerVisible)
       .filter((component) => [...required].every((capability) => component.capabilities.includes(capability)))
-      .filter((component) => this.networkAllowed(component, context))
+      .filter((component) => this.networkAllowed(component, task, context))
       .filter((component) => this.privacyAllowed(task, component))
       .filter((component) => this.withinTaskLimits(task, component))
       .map((component) => this.score(component, task, context))
-      .sort((a, b) => b.score - a.score || a.component.id.localeCompare(b.component.id));
+      .sort((a, b) =>
+        b.score - a.score ||
+        (a.component.id < b.component.id ? -1 : a.component.id > b.component.id ? 1 : 0),
+      );
   }
 
   private validateComponent(component: CapabilityComponent): void {
@@ -65,6 +71,10 @@ export class CapabilityRegistry {
       component.capabilities.some((capability) => typeof capability !== 'string' || capability.trim().length === 0)
     ) {
       throw new Error('Component must declare at least one non-empty capability: ' + component.id);
+    }
+
+    if (!VALID_PRIVACY_CLASSES.has(component.policy.privacy)) {
+      throw new Error('Component privacy class is invalid: ' + component.id);
     }
 
     const profile = component.resourceProfile;
@@ -101,6 +111,9 @@ export class CapabilityRegistry {
     if (typeof task.intent !== 'string' || task.intent.trim().length === 0) {
       throw new Error('Task intent must be a non-empty string');
     }
+    if (!VALID_PRIVACY_CLASSES.has(task.privacy)) {
+      throw new Error('Task privacy class is invalid');
+    }
     for (const [name, value] of [
       ['maxCost', task.maxCost],
       ['maxLatencyMs', task.maxLatencyMs],
@@ -112,16 +125,26 @@ export class CapabilityRegistry {
   }
 
   private validateContext(context: ExecutionContext): void {
+    if (!VALID_NETWORKS.has(context.network)) {
+      throw new Error('Execution context network is invalid');
+    }
+    if (typeof context.metered !== 'boolean' || typeof context.charging !== 'boolean') {
+      throw new Error('Execution context metered and charging values must be boolean');
+    }
     if (!Number.isFinite(context.batteryPct) || context.batteryPct < 0 || context.batteryPct > 100) {
       throw new Error('Execution context batteryPct must be between 0 and 100');
     }
   }
 
-  private networkAllowed(component: CapabilityComponent, context: ExecutionContext): boolean {
+  private networkAllowed(
+    component: CapabilityComponent,
+    task: TwgtTask,
+    context: ExecutionContext,
+  ): boolean {
     if (context.network === 'offline' && component.execution.requiresNetwork) return false;
     if (
       context.network === 'mobile' &&
-      component.capabilities.some((capability) => MOBILE_DEFERRED_CAPABILITIES.has(capability))
+      (task.requires ?? []).some((capability) => MOBILE_DEFERRED_CAPABILITIES.has(capability))
     ) {
       return false;
     }
@@ -132,6 +155,7 @@ export class CapabilityRegistry {
     if (
       task.maxLatencyMs !== undefined &&
       (component.resourceProfile.expectedLatencyMs === undefined ||
+        !isNonNegativeFinite(component.resourceProfile.expectedLatencyMs) ||
         component.resourceProfile.expectedLatencyMs > task.maxLatencyMs)
     ) {
       return false;
@@ -139,6 +163,7 @@ export class CapabilityRegistry {
     if (
       task.maxCost !== undefined &&
       (component.resourceProfile.expectedCost === undefined ||
+        !isNonNegativeFinite(component.resourceProfile.expectedCost) ||
         component.resourceProfile.expectedCost > task.maxCost)
     ) {
       return false;
