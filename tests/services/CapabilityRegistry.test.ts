@@ -184,3 +184,83 @@ describe('CapabilityRegistry decisions', () => {
       .toEqual(['alpha', 'middle', 'zeta']);
   });
 });
+
+
+describe('CapabilityRegistry reviewed edge cases', () => {
+  it('rejects unknown task and component privacy classes', () => {
+    const registry = new CapabilityRegistry();
+    expect(() =>
+      registry.register(
+        component('invalid-privacy', {
+          policy: {
+            ...baseComponent.policy,
+            privacy: 'unknown' as CapabilityComponent['policy']['privacy'],
+          },
+        }),
+      ),
+    ).toThrow(/privacy class is invalid/);
+
+    registry.register(baseComponent);
+    expect(() =>
+      registry.resolve(
+        { ...task, privacy: 'unknown' as TwgtTask['privacy'] },
+        context,
+      ),
+    ).toThrow(/privacy class is invalid/);
+  });
+
+  it('rejects incomplete or invalid connectivity contexts', () => {
+    const registry = new CapabilityRegistry();
+    registry.register(baseComponent);
+
+    for (const invalid of [
+      { ...context, network: 'unknown' as ExecutionContext['network'] },
+      { ...context, metered: undefined as unknown as boolean },
+      { ...context, charging: undefined as unknown as boolean },
+    ]) {
+      expect(() => registry.resolve(task, invalid)).toThrow();
+    }
+  });
+
+  it('revalidates mutable estimates before applying hard limits', () => {
+    const registry = new CapabilityRegistry();
+    const mutable = component('mutable');
+    registry.register(mutable);
+    mutable.resourceProfile.expectedCost = Number.NaN;
+
+    expect(() => registry.resolve({ ...task, maxCost: 1 }, context)).toThrow(
+      /expectedCost/,
+    );
+  });
+
+  it('defers only the mobile capability requested by the task', () => {
+    const registry = new CapabilityRegistry();
+    registry.register(
+      component('multi-capability', {
+        capabilities: ['repository.read', 'model.download'],
+      }),
+    );
+
+    expect(
+      registry.resolve(
+        { ...task, requires: ['repository.read'] },
+        { ...context, network: 'mobile' },
+      ),
+    ).toHaveLength(1);
+    expect(
+      registry.resolve(
+        { ...task, requires: ['model.download'] },
+        { ...context, network: 'mobile' },
+      ),
+    ).toHaveLength(0);
+  });
+
+  it('uses a total code-unit order for canonically equivalent identifiers', () => {
+    const registry = new CapabilityRegistry();
+    registry.register(component('é'));
+    registry.register(component('e\u0301'));
+
+    expect(registry.resolve(task, context).map((entry) => entry.component.id))
+      .toEqual(['e\u0301', 'é']);
+  });
+});
