@@ -148,9 +148,9 @@ describe('CapabilityRegistry hard constraints', () => {
 
   it('enforces local and trusted-cloud privacy boundaries', () => {
     const registry = new CapabilityRegistry();
-    registry.register(component('local', { policy: { privacy: 'local' } }));
-    registry.register(component('trusted', { policy: { privacy: 'trusted-cloud' } }));
-    registry.register(component('public', { policy: { privacy: 'public' } }));
+    registry.register(component('local', { policy: { ...baseComponent.policy, privacy: 'local' } }));
+    registry.register(component('trusted', { policy: { ...baseComponent.policy, privacy: 'trusted-cloud' } }));
+    registry.register(component('public', { policy: { ...baseComponent.policy, privacy: 'public' } }));
 
     expect(registry.resolve({ ...task, privacy: 'local' }, context).map((entry) => entry.component.id))
       .toEqual(['local']);
