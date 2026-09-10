@@ -8,6 +8,7 @@ export interface ResourceProfile {
   batteryCost?: 'low' | 'medium' | 'high';
   bandwidthCost?: 'low' | 'medium' | 'high';
   expectedLatencyMs?: number;
+  expectedCost?: number;
   monetaryCostClass?: 'free' | 'low' | 'variable' | 'premium';
 }
 
