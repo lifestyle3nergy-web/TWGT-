@@ -49,8 +49,11 @@ test('Pino 10 transport starts, flushes and exits cleanly', () => {
       }
     });
     logger.info({ requestId: 'request-2' }, 'transport-ready');
+    const transport = logger[pino.symbols.streamSym];
     await new Promise((resolve, reject) => {
-      logger.flush((error) => error ? reject(error) : resolve());
+      transport.once('error', reject);
+      transport.once('close', resolve);
+      transport.end();
     });
   `);
 
