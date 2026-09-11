@@ -64,4 +64,7 @@ export interface ResolvedComponent {
   component: CapabilityComponent;
   score: number;
   reasons: string[];
+  /** True when the component's declared defaultAccess is not 'read-only' and a
+   *  downstream execution-plan boundary must obtain authorization before dispatch. */
+  approvalRequired: boolean;
 }
