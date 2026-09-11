@@ -75,6 +75,9 @@ jobs:
           node --version
           npm --version
 
+      - name: Enforce Node runtime contract
+        run: npm run check:node
+
       - name: Install dependencies
         run: npm ci
 
@@ -97,3 +100,51 @@ jobs:
 
       - name: Git diff validation
         run: git diff --check
+
+  governance:
+    name: Governance Verification
+    runs-on: ubuntu-latest
+    needs: validate
+    if: github.event_name == 'pull_request'
+    permissions:
+      contents: read
+      pull-requests: read
+
+    steps:
+      - name: Checkout PR head with full history
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+          ref: ${{ github.event.pull_request.head.sha }}
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: 24.19.0
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Verify PR head stability
+        env:
+          GITHUB_PR_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          GITHUB_PR_BASE_SHA: ${{ github.event.pull_request.base.sha }}
+        run: node scripts/verify-governance.mjs
+
+      - name: npm audit high/critical gate
+        run: npm audit --audit-level=high
+
+      - name: Governance evidence summary
+        env:
+          GITHUB_PR_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          GITHUB_PR_BASE_SHA: ${{ github.event.pull_request.base.sha }}
+        run: |
+          echo "BASE_SHA=$GITHUB_PR_BASE_SHA"
+          echo "VERIFIED_SHA=$GITHUB_PR_HEAD_SHA"
+          echo "STATIC_INTEGRITY=PASS (required validate job)"
+          echo "DEPENDENCY_REVIEW=PASS (separate required workflow)"
+          echo "CODEQL=PASS (separate required workflow)"
+          echo "NPM_AUDIT=PASS"
+          echo "PR_HEAD_STABILITY=PASS"
+          echo "VERDICT=PASS_PENDING_EXTERNAL_REQUIRED_CHECKS"

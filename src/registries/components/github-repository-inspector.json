@@ -1,0 +1,34 @@
+{
+  "id": "github-repository-inspector",
+  "type": "tool",
+  "capabilities": ["repository.read", "pull-request.read", "workflow.read", "check-run.read"],
+  "execution": {
+    "environments": ["cloud", "github-action"],
+    "requiresNetwork": true
+  },
+  "invocation": {
+    "routerVisible": true,
+    "runtimeManaged": true
+  },
+  "policy": {
+    "defaultAccess": "read-only",
+    "privacy": "trusted-cloud",
+    "humanApprovalFor": ["repository.write", "workflow.modify", "merge"]
+  },
+  "resourceProfile": {
+    "cpuClass": "low",
+    "batteryCost": "low",
+    "bandwidthCost": "low",
+    "monetaryCostClass": "free"
+  },
+  "telemetry": ["duration_ms", "request_count", "bytes_transferred", "success", "error_class"],
+  "evidence": {
+    "destination": "github"
+  },
+  "lifecycle": {
+    "owner": "TWGT",
+    "versioned": true,
+    "fallback": "defer-until-network",
+    "replacementContract": "repository-inspection-v1"
+  }
+}
