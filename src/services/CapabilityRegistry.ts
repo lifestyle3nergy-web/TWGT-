@@ -9,7 +9,12 @@ const VALID_LEVELS = new Set(['low', 'medium', 'high']);
 const VALID_COST_CLASSES = new Set(['free', 'low', 'variable', 'premium']);
 const VALID_PRIVACY_CLASSES = new Set(['local', 'trusted-cloud', 'public']);
 const VALID_NETWORKS = new Set(['wifi', 'mobile', 'offline']);
-const MOBILE_DEFERRED_CAPABILITIES = new Set([
+const VALID_ENVIRONMENTS = new Set(['android-edge', 'cloud', 'github-action', 'external-api']);
+const VALID_ACCESS_LEVELS = new Set(['read-only', 'execute', 'write']);
+const VALID_COMPONENT_TYPES = new Set(['model', 'tool', 'skill', 'worker', 'adapter', 'sensor']);
+const VALID_PRIORITIES = new Set(['low', 'normal', 'high']);
+const VALID_EVIDENCE_DESTINATIONS = new Set(['github', 'local', 'telemetry']);
+export const MOBILE_DEFERRED_CAPABILITIES: ReadonlySet<string> = new Set([
   'container.pull',
   'repository.clone.large',
   'model.download',
@@ -73,10 +78,87 @@ export class CapabilityRegistry {
       throw new Error('Component must declare at least one non-empty capability: ' + component.id);
     }
 
+    if (!VALID_COMPONENT_TYPES.has(component.type)) {
+      throw new Error('Component type is invalid: ' + component.id);
+    }
+
+    if (typeof component.execution !== 'object' || component.execution === null) {
+      throw new Error('Component execution must be an object: ' + component.id);
+    }
+    if (typeof component.execution.requiresNetwork !== 'boolean') {
+      throw new Error('Component execution.requiresNetwork must be a boolean: ' + component.id);
+    }
+    if (
+      !Array.isArray(component.execution.environments) ||
+      component.execution.environments.length === 0 ||
+      component.execution.environments.some((environment) => !VALID_ENVIRONMENTS.has(environment))
+    ) {
+      throw new Error('Component must declare at least one valid execution environment: ' + component.id);
+    }
+
+    if (typeof component.invocation !== 'object' || component.invocation === null) {
+      throw new Error('Component invocation must be an object: ' + component.id);
+    }
+    if (
+      typeof component.invocation.routerVisible !== 'boolean' ||
+      typeof component.invocation.runtimeManaged !== 'boolean'
+    ) {
+      throw new Error('Component invocation routerVisible and runtimeManaged must be boolean: ' + component.id);
+    }
+
+    if (typeof component.policy !== 'object' || component.policy === null) {
+      throw new Error('Component policy must be an object: ' + component.id);
+    }
     if (!VALID_PRIVACY_CLASSES.has(component.policy.privacy)) {
       throw new Error('Component privacy class is invalid: ' + component.id);
     }
+    if (!VALID_ACCESS_LEVELS.has(component.policy.defaultAccess)) {
+      throw new Error('Component policy defaultAccess is invalid: ' + component.id);
+    }
+    if (
+      !Array.isArray(component.policy.humanApprovalFor) ||
+      component.policy.humanApprovalFor.some(
+        (operation) => typeof operation !== 'string' || operation.trim().length === 0,
+      )
+    ) {
+      throw new Error('Component policy humanApprovalFor must be an array of non-empty strings: ' + component.id);
+    }
 
+    if (
+      !Array.isArray(component.telemetry) ||
+      component.telemetry.some((metric) => typeof metric !== 'string' || metric.trim().length === 0)
+    ) {
+      throw new Error('Component telemetry must be an array of non-empty strings: ' + component.id);
+    }
+
+    if (typeof component.evidence !== 'object' || component.evidence === null) {
+      throw new Error('Component evidence must be an object: ' + component.id);
+    }
+    if (!VALID_EVIDENCE_DESTINATIONS.has(component.evidence.destination)) {
+      throw new Error('Component evidence destination is invalid: ' + component.id);
+    }
+
+    if (typeof component.lifecycle !== 'object' || component.lifecycle === null) {
+      throw new Error('Component lifecycle must be an object: ' + component.id);
+    }
+    if (typeof component.lifecycle.owner !== 'string' || component.lifecycle.owner.trim().length === 0) {
+      throw new Error('Component lifecycle owner must be a non-empty string: ' + component.id);
+    }
+    if (typeof component.lifecycle.versioned !== 'boolean') {
+      throw new Error('Component lifecycle versioned must be a boolean: ' + component.id);
+    }
+    for (const [name, value] of [
+      ['fallback', component.lifecycle.fallback],
+      ['replacementContract', component.lifecycle.replacementContract],
+    ] as const) {
+      if (value !== undefined && (typeof value !== 'string' || value.trim().length === 0)) {
+        throw new Error('Component lifecycle ' + name + ' must be a non-empty string: ' + component.id);
+      }
+    }
+
+    if (typeof component.resourceProfile !== 'object' || component.resourceProfile === null) {
+      throw new Error('Component resourceProfile must be an object: ' + component.id);
+    }
     const profile = component.resourceProfile;
     for (const [name, value] of [
       ['memoryMb', profile.memoryMb],
@@ -105,14 +187,32 @@ export class CapabilityRegistry {
   }
 
   private validateTask(task: TwgtTask): void {
+    if (typeof task !== 'object' || task === null) {
+      throw new Error('Task must be an object');
+    }
     if (typeof task.id !== 'string' || task.id.trim().length === 0) {
       throw new Error('Task id must be a non-empty string');
     }
     if (typeof task.intent !== 'string' || task.intent.trim().length === 0) {
       throw new Error('Task intent must be a non-empty string');
     }
+    if (!VALID_PRIORITIES.has(task.priority)) {
+      throw new Error('Task priority is invalid');
+    }
     if (!VALID_PRIVACY_CLASSES.has(task.privacy)) {
       throw new Error('Task privacy class is invalid');
+    }
+    for (const [name, value] of [
+      ['requires', task.requires],
+      ['contextRefs', task.contextRefs],
+    ] as const) {
+      if (
+        value !== undefined &&
+        (!Array.isArray(value) ||
+          value.some((entry) => typeof entry !== 'string' || entry.trim().length === 0))
+      ) {
+        throw new Error('Task ' + name + ' must be an array of non-empty strings');
+      }
     }
     for (const [name, value] of [
       ['maxCost', task.maxCost],
@@ -125,6 +225,9 @@ export class CapabilityRegistry {
   }
 
   private validateContext(context: ExecutionContext): void {
+    if (typeof context !== 'object' || context === null) {
+      throw new Error('Execution context must be an object');
+    }
     if (!VALID_NETWORKS.has(context.network)) {
       throw new Error('Execution context network is invalid');
     }
@@ -209,6 +312,11 @@ export class CapabilityRegistry {
       reasons.push('locality-bonus');
     }
 
-    return { component, score, reasons };
+    return {
+      component,
+      score,
+      reasons,
+      approvalRequired: component.policy.defaultAccess !== 'read-only',
+    };
   }
 }
