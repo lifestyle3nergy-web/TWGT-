@@ -11,6 +11,11 @@
     }
   },
   "scripts": {
+    "check:node": "node scripts/check-node-version.mjs",
+    "prelint": "npm run check:node",
+    "pretypecheck": "npm run check:node",
+    "pretest": "npm run check:node",
+    "prebuild": "npm run check:node",
     "dev": "node --loader ts-node/esm src/index.ts",
     "build": "tsc && node scripts/resolve-dist-imports.mjs",
     "start": "node dist/index.js",
