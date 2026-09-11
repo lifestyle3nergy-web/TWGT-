@@ -264,3 +264,90 @@ describe('CapabilityRegistry reviewed edge cases', () => {
       .toEqual(['e\u0301', 'é']);
   });
 });
+
+describe('CapabilityRegistry admission hardening', () => {
+  it('rejects components with malformed execution declarations', () => {
+    for (const invalid of [
+      component('missing-requires-network', {
+        execution: { ...baseComponent.execution, requiresNetwork: undefined },
+      }),
+      component('string-requires-network', {
+        execution: { ...baseComponent.execution, requiresNetwork: 'yes' as unknown as boolean },
+      }),
+      component('missing-environments', {
+        execution: { environments: undefined },
+      }),
+      component('invalid-environment', {
+        execution: { ...baseComponent.execution, environments: ['quantum-edge' as 'cloud'] },
+      }),
+      component('empty-environments', { execution: { ...baseComponent.execution, environments: [] } }),
+      { ...component('missing-execution'), execution: undefined } as CapabilityComponent,
+    ]) {
+      expect(() => new CapabilityRegistry().register(invalid)).toThrow(/execution/);
+    }
+  });
+
+  it('rejects components with malformed invocation, policy and telemetry declarations', () => {
+    for (const invalid of [
+      component('string-router-visible', {
+        invocation: { ...baseComponent.invocation, routerVisible: 'yes' as unknown as boolean },
+      }),
+      component('missing-runtime-managed', {
+        invocation: { ...baseComponent.invocation, runtimeManaged: undefined },
+      }),
+      component('invalid-default-access', {
+        policy: { ...baseComponent.policy, defaultAccess: 'sudo' as 'read-only' },
+      }),
+      component('string-approval-list', {
+        policy: { ...baseComponent.policy, humanApprovalFor: 'merge' as unknown as string[] },
+      }),
+      component('string-telemetry', { telemetry: 'duration_ms' as unknown as string[] }),
+      { ...component('missing-resource-profile'), resourceProfile: undefined } as CapabilityComponent,
+    ]) {
+      expect(() => new CapabilityRegistry().register(invalid)).toThrow();
+    }
+  });
+
+  it('rejects malformed task requirement entries and null task or context', () => {
+    const registry = new CapabilityRegistry();
+    registry.register(baseComponent);
+
+    for (const invalidTask of [
+      { ...task, requires: [42 as unknown as string] },
+      { ...task, requires: 'repository.read' as unknown as string[] },
+      { ...task, contextRefs: [''] },
+      null,
+    ]) {
+      expect(() => registry.resolve(invalidTask as TwgtTask, context)).toThrow();
+    }
+    expect(() => registry.resolve(task, null as unknown as ExecutionContext)).toThrow(
+      /context must be an object/,
+    );
+  });
+
+  it('keeps malformed components out of offline resolution', () => {
+    const registry = new CapabilityRegistry();
+    expect(() =>
+      registry.register(
+        component('corrupt-network-declaration', {
+          execution: { ...baseComponent.execution, requiresNetwork: undefined },
+        }),
+      ),
+    ).toThrow(/requiresNetwork/);
+    expect(registry.list()).toHaveLength(0);
+  });
+
+  it('surfaces the declared authorization boundary on resolved entries', () => {
+    const registry = new CapabilityRegistry();
+    registry.register(component('read-only', { policy: { ...baseComponent.policy, defaultAccess: 'read-only' } }));
+    registry.register(component('execute', { policy: { ...baseComponent.policy, defaultAccess: 'execute' } }));
+    registry.register(component('write', { policy: { ...baseComponent.policy, defaultAccess: 'write' } }));
+
+    const byId = new Map(
+      registry.resolve(task, context).map((entry) => [entry.component.id, entry]),
+    );
+    expect(byId.get('read-only')?.approvalRequired).toBe(false);
+    expect(byId.get('execute')?.approvalRequired).toBe(true);
+    expect(byId.get('write')?.approvalRequired).toBe(true);
+  });
+});

@@ -99,3 +99,22 @@ Android -> POST /task -> Runtime -> Router -> SQLite/GitHub/one model -> Validat
 ```
 
 Do not add multiple model providers until this vertical slice is deterministic, observable and policy-controlled.
+
+## Policy enforcement status
+
+| Policy | Implementation | Status |
+| --- | --- | --- |
+| Privacy | `privacyAllowed`: local tasks admit local components only; trusted-cloud tasks exclude public components | ENFORCED |
+| Network | `networkAllowed`: offline rejects network-required components; metered rejects high bandwidth cost; mobile defers the `MOBILE_DEFERRED_CAPABILITIES` set | ENFORCED (resolver slice) |
+| Latency | `withinTaskLimits`: candidates over or lacking an estimate are rejected when `maxLatencyMs` is set | ENFORCED |
+| Cost | `withinTaskLimits`: candidates over or lacking an estimate are rejected when `maxCost` is set; premium cost class penalised in scoring | ENFORCED (limit) / ADVISORY (class) |
+| Battery | scoring penalty for high battery cost below 25% while unplugged | ADVISORY |
+| Authorization | `policy.defaultAccess` and `humanApprovalFor` are validated at admission and surfaced as `approvalRequired` on resolved entries | DEFERRED to EXECUTION PLAN (no executor in this slice) |
+
+`src/policies/edge-execution-policy.json` remains declarative; the resolver enforces the
+mobile deferral slice and a test asserts parity between the document and the enforced set.
+The policy engine does not yet load the full document at runtime.
+
+No execution path (EXECUTION PLAN, RUNTIME, SASA, EXECUTOR) exists in this slice, so no
+resolved entry can be executed without passing a future executor boundary, which MUST
+honour `approvalRequired` before dispatch.
