@@ -33,6 +33,13 @@ describe('edge-execution-policy fixture', () => {
     const enforced = [...MOBILE_DEFERRED_CAPABILITIES].sort();
     expect(documented).toEqual(enforced);
   });
+
+  it('documents that the resolver enforces exactly the metered deferBandwidthCost set', () => {
+    // The resolver hardcodes the enforced metered bandwidth class; if the policy
+    // document is widened (e.g. 'medium' added), this test fails and flags the gap
+    // between the declarative document and the enforced slice.
+    expect([...edgePolicy.network.metered.deferBandwidthCost].sort()).toEqual(['high']);
+  });
 });
 
 describe('github-repository-inspector fixture', () => {

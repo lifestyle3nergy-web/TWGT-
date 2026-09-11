@@ -325,6 +325,36 @@ describe('CapabilityRegistry admission hardening', () => {
     );
   });
 
+  it('rejects components violating the declared component-class and lifecycle admission gate', () => {
+    for (const invalid of [
+      component('invalid-type', { type: 'daemon' as 'tool' }),
+      component('invalid-evidence', {
+        evidence: { ...baseComponent.evidence, destination: 'slack' as 'github' },
+      }),
+      { ...component('missing-evidence'), evidence: undefined } as CapabilityComponent,
+      { ...component('missing-lifecycle'), lifecycle: undefined } as CapabilityComponent,
+      component('empty-owner', { lifecycle: { ...baseComponent.lifecycle, owner: '  ' } }),
+      component('unversioned', { lifecycle: { ...baseComponent.lifecycle, versioned: undefined } }),
+      component('numeric-fallback', {
+        lifecycle: { ...baseComponent.lifecycle, fallback: 42 as unknown as string },
+      }),
+      component('empty-replacement-contract', {
+        lifecycle: { ...baseComponent.lifecycle, replacementContract: '' },
+      }),
+    ]) {
+      expect(() => new CapabilityRegistry().register(invalid)).toThrow();
+    }
+  });
+
+  it('rejects tasks with an invalid priority', () => {
+    const registry = new CapabilityRegistry();
+    registry.register(baseComponent);
+
+    expect(() =>
+      registry.resolve({ ...task, priority: 'urgent' as 'normal' }, context),
+    ).toThrow(/priority/);
+  });
+
   it('keeps malformed components out of offline resolution', () => {
     const registry = new CapabilityRegistry();
     expect(() =>
