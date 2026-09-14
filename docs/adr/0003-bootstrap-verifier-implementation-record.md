@@ -4,8 +4,8 @@
 **Date:** 2026-09-08
 **PR:** #68 — `governance: implement fail-closed bootstrap verifier`
 **Branch:** `governance/bootstrap-verifier`
-**Implementation commit:** `30d447144de622068ef8b2ff3b5fdf6bf9503476`
-**Base commit:** `886f1ac7d047bb2653ed337c3f591058a16fda51`
+**Implementation lineage:** `30d4471` initial implementation; `943790e` review remediation
+**Validation base:** current `main` merge reference
 
 ## 1. Purpose
 
@@ -21,12 +21,12 @@ The verifier is implemented under `activation/` and performs the following check
 
 1. Load bootstrap evidence and the verifier public key from the configured/default activation paths.
 2. Validate the bootstrap evidence against the repository schema.
-3. Reject undeclared fields and missing required fields.
+3. Recursively enforce field types, minimum lengths, patterns, required fields, and closed-object constraints.
 4. Require real 40-character hexadecimal nucleus and rollback commit identifiers and reject placeholder values.
 5. Validate repository identity against the configured/default TWGT repository identity.
 6. Require a non-empty digest map.
 7. Require each digest to be a 64-character SHA-256 hexadecimal value and reject placeholders.
-8. Resolve each referenced artifact without allowing paths to escape the repository root.
+8. Resolve each referenced artifact canonically, reject symbolic links, and prevent lexical or real-path escape from the repository root.
 9. Hash the exact raw bytes of each referenced artifact and compare them with the supplied SHA-256 digest.
 10. Require a verifier key, reject placeholder key material, and parse the key using the Node cryptographic key parser.
 11. Require a signature object containing an algorithm and value and reject placeholder values.
@@ -77,7 +77,7 @@ Documents that bootstrap evidence, repository inventory, nucleus/rollback issuan
 
 `tests/tooling/bootstrap-verifier.test.mjs`
 
-Negative tests cover placeholder commit, placeholder rollback, empty digest sets, invalid digests, placeholder keys, digest mismatch, and an undefined signature algorithm. Test-only cryptographic material is ephemeral and is not committed.
+Negative tests cover placeholder commit, placeholder rollback, empty digest sets, invalid digests, placeholder keys, digest mismatch, malformed schema values, undeclared nested signature fields, symbolic-link artifacts, and an undefined signature algorithm. Test-only cryptographic material is ephemeral and is not committed.
 
 ## 4. Signature Contract Decision
 
@@ -110,15 +110,15 @@ The bootstrap archive explicitly identified several of these values as team-issu
 
 PR #68 is open against `main` and has not been merged.
 
-At implementation commit `30d447144de622068ef8b2ff3b5fdf6bf9503476`, the following GitHub Actions workflow runs completed successfully:
+Review remediation at source/test head `943790e` completed successfully in GitHub Actions:
 
-| Workflow | Run | Result |
-|---|---:|---|
-| CodeQL | #265 | success |
-| Dependency Review | #132 | success |
-| Continuous Integration | #257 | success |
+| Workflow | Result |
+|---|---|
+| CodeQL | success |
+| Dependency Review | success |
+| Continuous Integration | success |
 
-These results establish CI success for the recorded implementation commit. They do not constitute authorization to activate bootstrap trust material.
+The remediation closes the recorded schema-validation, fixture, and symlink-containment findings. This documentation update intentionally triggers a fresh merge-reference validation cycle against current `main`. Successful checks authorize only merging the fail-closed verifier; they do not authorize bootstrap activation.
 
 ## 7. Explicit Remaining Blockers
 
