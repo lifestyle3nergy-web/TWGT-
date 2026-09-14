@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 import { createHash, createPublicKey } from 'node:crypto';
-import { existsSync, readFileSync } from 'node:fs';
+import { existsSync, lstatSync, readFileSync, realpathSync } from 'node:fs';
 import { dirname, relative, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -33,15 +33,44 @@ const loadJson = (path, label) => {
 const schema = loadJson(`${ROOT}/schemas/bootstrap.schema.json`, 'bootstrap schema');
 const evidence = loadJson(evidencePath, 'bootstrap evidence');
 
+const validateSchemaValue = (value, contract, location) => {
+  if (contract.type === 'object') {
+    if (!value || typeof value !== 'object' || Array.isArray(value)) {
+      fail(`${location} must be an object`);
+    }
+    for (const field of contract.required ?? []) {
+      if (!(field in value)) fail(`${location} missing required field: ${field}`);
+    }
+    if (contract.additionalProperties === false) {
+      for (const key of Object.keys(value)) {
+        if (!(key in (contract.properties ?? {}))) fail(`${location} contains undeclared property: ${key}`);
+      }
+    }
+    if (contract.minProperties !== undefined && Object.keys(value).length < contract.minProperties) {
+      fail(`${location} must contain at least ${contract.minProperties} properties`);
+    }
+    for (const [key, child] of Object.entries(value)) {
+      const childContract = contract.properties?.[key]
+        ?? (typeof contract.additionalProperties === 'object' ? contract.additionalProperties : undefined);
+      if (childContract) validateSchemaValue(child, childContract, `${location}.${key}`);
+    }
+    return;
+  }
+  if (contract.type === 'string') {
+    if (typeof value !== 'string') fail(`${location} must be a string`);
+    if (contract.minLength !== undefined && value.length < contract.minLength) {
+      fail(`${location} must contain at least ${contract.minLength} characters`);
+    }
+    if (contract.pattern && !new RegExp(contract.pattern).test(value)) {
+      fail(`${location} does not match its required pattern`);
+    }
+  }
+};
+
 if (schema.type !== 'object' || schema.additionalProperties !== false) {
   fail('bootstrap schema must define a closed object contract');
 }
-for (const field of schema.required ?? []) {
-  if (!(field in evidence)) fail(`evidence missing required field: ${field}`);
-}
-for (const key of Object.keys(evidence)) {
-  if (!(key in schema.properties)) fail(`evidence contains undeclared property: ${key}`);
-}
+validateSchemaValue(evidence, schema, 'evidence');
 
 for (const field of ['commit', 'rollbackPin']) {
   if (!isGitSha(evidence[field]) || isPlaceholder(evidence[field])) {
@@ -67,7 +96,14 @@ for (const [path, expected] of digestEntries) {
     fail(`digest path escapes repository root: ${path}`);
   }
   requireFile(artifact, `digest artifact ${path}`);
-  const actual = createHash('sha256').update(readFileSync(artifact)).digest('hex');
+  if (lstatSync(artifact).isSymbolicLink()) fail(`digest artifact must not be a symbolic link: ${path}`);
+  const canonicalRoot = realpathSync(repositoryRoot);
+  const canonicalArtifact = realpathSync(artifact);
+  const canonicalRel = relative(canonicalRoot, canonicalArtifact);
+  if (!canonicalRel || canonicalRel === '..' || canonicalRel.startsWith('../') || canonicalRel.includes('/../')) {
+    fail(`digest path resolves outside repository root: ${path}`);
+  }
+  const actual = createHash('sha256').update(readFileSync(canonicalArtifact)).digest('hex');
   if (actual !== expected.toLowerCase()) fail(`SHA-256 mismatch for ${path}`);
 }
 
