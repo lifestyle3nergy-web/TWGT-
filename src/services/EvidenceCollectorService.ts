@@ -11,7 +11,10 @@ export interface RawEvidence {
 }
 
 export class EvidenceCollectorService {
-  collect(items: readonly RawEvidence[], requiredKinds: readonly EvidenceReference['kind'][]): EvidenceReference[] {
+  collect(
+    items: readonly RawEvidence[],
+    requiredKinds: readonly EvidenceReference['kind'][],
+  ): EvidenceReference[] {
     const collected = items.map((item) => ({
       id: item.id,
       kind: item.kind,
@@ -22,7 +25,13 @@ export class EvidenceCollectorService {
 
     for (const kind of requiredKinds) {
       if (!collected.some((item) => item.kind === kind)) {
-        collected.push({ id: `missing-${kind}`, kind, source: 'missing', observedAt: 'missing', status: 'missing' });
+        collected.push({
+          id: `missing-${kind}`,
+          kind,
+          source: 'missing',
+          observedAt: 'missing',
+          status: 'missing',
+        });
       }
     }
     return collected;
