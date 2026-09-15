@@ -36,9 +36,9 @@ let baselineTopLevel;
 
 if (baseRef) {
   try {
-    run(['fetch', '--no-tags', '--depth=1', 'origin', baseRef]);
-  } catch {
-    // The workflow uses fetch-depth: 0, but keep the validator useful locally.
+    run(['fetch', '--no-tags', 'origin', `+refs/heads/${baseRef}:refs/remotes/origin/${baseRef}`]);
+  } catch (error) {
+    errors.push(`Unable to fetch PR base origin/${baseRef}: ${error.message}`);
   }
 
   try {
@@ -52,11 +52,15 @@ if (baseRef) {
   }
 
   try {
-    changed = run(['diff', '--name-only', `origin/${baseRef}...HEAD`])
-      .split('\n')
-      .filter(Boolean);
-  } catch {
-    errors.push(`Unable to determine PR diff against origin/${baseRef}`);
+    // GitHub pull_request workflows normally check out a synthetic merge
+    // commit. Its first parent is the base side of that merge. Diffing the
+    // first parent to HEAD avoids relying on a three-dot merge-base lookup
+    // that can fail when refs were fetched with incomplete ancestry.
+    const parents = run(['rev-list', '--parents', '-n', '1', 'HEAD']).split(/\s+/).slice(1);
+    const diffBase = parents.length > 1 ? parents[0] : `origin/${baseRef}`;
+    changed = run(['diff', '--name-only', diffBase, 'HEAD']).split('\n').filter(Boolean);
+  } catch (error) {
+    errors.push(`Unable to determine PR diff against origin/${baseRef}: ${error.message}`);
   }
 } else {
   // On a non-PR invocation, the checked-out tree is the baseline.
