@@ -33,7 +33,7 @@
     "fastify": "5.12.4",
     "ioredis": "^6.0.0",
     "jsonwebtoken": "^9.0.2",
-    "neo4j-driver": "^5.13.0",
+    "neo4j-driver": "^6.2.0",
     "openai": "^7.15.0",
     "pino": "10.3.1",
     "pino-pretty": "^13.1.3",
