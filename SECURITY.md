@@ -23,10 +23,10 @@ Every repository is expected to follow secure development practices, protect sen
 
 # Supported Branches
 
-| Branch | Status |
-|---------|--------|
-| main | Supported |
-| develop | Supported |
+| Branch    | Status           |
+| --------- | ---------------- |
+| main      | Supported        |
+| develop   | Supported        |
 | feature/* | Development Only |
 
 ---

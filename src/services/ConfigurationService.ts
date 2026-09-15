@@ -32,9 +32,7 @@ export class ConfigurationService {
     const value = this.values.get(key);
 
     if (!value) {
-      throw new Error(
-        `Required configuration "${key}" is missing.`
-      );
+      throw new Error(`Required configuration "${key}" is missing.`);
     }
 
     return value;

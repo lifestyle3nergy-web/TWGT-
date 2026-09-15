@@ -10,9 +10,9 @@
  * The three ordered phases of a single cognitive cycle.
  */
 export enum CognitivePhase {
-  OBSERVE = "OBSERVE",
-  UNDERSTAND = "UNDERSTAND",
-  RESPOND = "RESPOND",
+  OBSERVE = 'OBSERVE',
+  UNDERSTAND = 'UNDERSTAND',
+  RESPOND = 'RESPOND',
 }
 
 /**

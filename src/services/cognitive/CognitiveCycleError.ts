@@ -1,4 +1,4 @@
-import { CognitivePhase } from "./types";
+import { CognitivePhase } from './types';
 
 /**
  * Raised when a cognitive cycle phase fails. Preserves the originating phase
@@ -13,7 +13,7 @@ export class CognitiveCycleError extends Error {
       cause,
     });
 
-    this.name = "CognitiveCycleError";
+    this.name = 'CognitiveCycleError';
     this.phase = phase;
 
     // Restore the prototype chain when targeting older transpilation output.

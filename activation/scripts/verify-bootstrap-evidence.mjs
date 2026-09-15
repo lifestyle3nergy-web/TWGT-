@@ -5,8 +5,12 @@ import { dirname, relative, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
-const evidencePath = resolve(process.env.TWGT_BOOTSTRAP_EVIDENCE ?? `${ROOT}/evidence/bootstrap.json`);
-const keyPath = resolve(process.env.TWGT_BOOTSTRAP_VERIFIER_KEY ?? `${ROOT}/keys/bootstrap-verifier.pub`);
+const evidencePath = resolve(
+  process.env.TWGT_BOOTSTRAP_EVIDENCE ?? `${ROOT}/evidence/bootstrap.json`,
+);
+const keyPath = resolve(
+  process.env.TWGT_BOOTSTRAP_VERIFIER_KEY ?? `${ROOT}/keys/bootstrap-verifier.pub`,
+);
 const repositoryRoot = resolve(process.env.TWGT_BOOTSTRAP_REPOSITORY_ROOT ?? `${ROOT}/..`);
 
 const fail = (message) => {
@@ -19,7 +23,8 @@ const requireFile = (path, label) => {
 const isGitSha = (value) => typeof value === 'string' && /^[0-9a-fA-F]{40}$/.test(value);
 const isSha256 = (value) => typeof value === 'string' && /^[0-9a-fA-F]{64}$/.test(value);
 const isPlaceholder = (value) =>
-  typeof value === 'string' && /(REPLACE_WITH|TEAM_ISSUED|REQUIRED:|CHANGE_ME|CHANGEME|PLACEHOLDER|TODO)/i.test(value);
+  typeof value === 'string' &&
+  /(REPLACE_WITH|TEAM_ISSUED|REQUIRED:|CHANGE_ME|CHANGEME|PLACEHOLDER|TODO)/i.test(value);
 
 const loadJson = (path, label) => {
   requireFile(path, label);
@@ -43,15 +48,22 @@ const validateSchemaValue = (value, contract, location) => {
     }
     if (contract.additionalProperties === false) {
       for (const key of Object.keys(value)) {
-        if (!(key in (contract.properties ?? {}))) fail(`${location} contains undeclared property: ${key}`);
+        if (!(key in (contract.properties ?? {})))
+          fail(`${location} contains undeclared property: ${key}`);
       }
     }
-    if (contract.minProperties !== undefined && Object.keys(value).length < contract.minProperties) {
+    if (
+      contract.minProperties !== undefined &&
+      Object.keys(value).length < contract.minProperties
+    ) {
       fail(`${location} must contain at least ${contract.minProperties} properties`);
     }
     for (const [key, child] of Object.entries(value)) {
-      const childContract = contract.properties?.[key]
-        ?? (typeof contract.additionalProperties === 'object' ? contract.additionalProperties : undefined);
+      const childContract =
+        contract.properties?.[key] ??
+        (typeof contract.additionalProperties === 'object'
+          ? contract.additionalProperties
+          : undefined);
       if (childContract) validateSchemaValue(child, childContract, `${location}.${key}`);
     }
     return;
@@ -96,11 +108,17 @@ for (const [path, expected] of digestEntries) {
     fail(`digest path escapes repository root: ${path}`);
   }
   requireFile(artifact, `digest artifact ${path}`);
-  if (lstatSync(artifact).isSymbolicLink()) fail(`digest artifact must not be a symbolic link: ${path}`);
+  if (lstatSync(artifact).isSymbolicLink())
+    fail(`digest artifact must not be a symbolic link: ${path}`);
   const canonicalRoot = realpathSync(repositoryRoot);
   const canonicalArtifact = realpathSync(artifact);
   const canonicalRel = relative(canonicalRoot, canonicalArtifact);
-  if (!canonicalRel || canonicalRel === '..' || canonicalRel.startsWith('../') || canonicalRel.includes('/../')) {
+  if (
+    !canonicalRel ||
+    canonicalRel === '..' ||
+    canonicalRel.startsWith('../') ||
+    canonicalRel.includes('/../')
+  ) {
     fail(`digest path resolves outside repository root: ${path}`);
   }
   const actual = createHash('sha256').update(readFileSync(canonicalArtifact)).digest('hex');
@@ -116,7 +134,11 @@ try {
   fail(`invalid bootstrap verifier public key: ${error.message}`);
 }
 
-if (!evidence.signature || typeof evidence.signature !== 'object' || Array.isArray(evidence.signature)) {
+if (
+  !evidence.signature ||
+  typeof evidence.signature !== 'object' ||
+  Array.isArray(evidence.signature)
+) {
   fail('signature object missing');
 }
 const algorithm = evidence.signature.algorithm;
@@ -124,7 +146,11 @@ const signatureValue = evidence.signature.value;
 if (typeof algorithm !== 'string' || algorithm.length === 0 || isPlaceholder(algorithm)) {
   fail('signature algorithm is not authoritatively defined');
 }
-if (typeof signatureValue !== 'string' || signatureValue.length === 0 || isPlaceholder(signatureValue)) {
+if (
+  typeof signatureValue !== 'string' ||
+  signatureValue.length === 0 ||
+  isPlaceholder(signatureValue)
+) {
   fail('signature value is missing or placeholder material');
 }
 
@@ -132,5 +158,7 @@ if (typeof signatureValue !== 'string' || signatureValue.length === 0 || isPlace
 // algorithm and canonical signed payload. Never guess a cryptographic contract.
 const SIGNATURE_ADAPTERS = new Map();
 if (!SIGNATURE_ADAPTERS.has(algorithm)) {
-  fail(`unsupported signature algorithm: ${algorithm}; authoritative signature contract is not registered`);
+  fail(
+    `unsupported signature algorithm: ${algorithm}; authoritative signature contract is not registered`,
+  );
 }

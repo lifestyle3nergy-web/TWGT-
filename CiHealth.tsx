@@ -3,7 +3,7 @@ export default function CiHealth({ runs }) {
     <section>
       <h2>CI Health</h2>
       <ul>
-        {runs.map(run => (
+        {runs.map((run) => (
           <li key={run.id}>
             {run.name}: {run.conclusion}
           </li>

@@ -19,13 +19,28 @@ export interface RiskAssessment {
 }
 
 export class RiskScoringService {
-  assess(categories: readonly ChangeCategory[], evidence: readonly EvidenceReference[]): RiskAssessment {
-    const reasons = categories.filter((category) => WEIGHTS[category] > 0).map((category) => `${category}:${WEIGHTS[category]}`);
+  assess(
+    categories: readonly ChangeCategory[],
+    evidence: readonly EvidenceReference[],
+  ): RiskAssessment {
+    const reasons = categories
+      .filter((category) => WEIGHTS[category] > 0)
+      .map((category) => `${category}:${WEIGHTS[category]}`);
     const failures = evidence.filter((item) => item.status === 'fail');
     const missing = evidence.filter((item) => item.status === 'missing');
-    const score = Math.min(100, categories.reduce((sum, category) => sum + WEIGHTS[category], 0) + failures.length * 30 + missing.length * 15);
+    const score = Math.min(
+      100,
+      categories.reduce((sum, category) => sum + WEIGHTS[category], 0) +
+        failures.length * 30 +
+        missing.length * 15,
+    );
     const uncertainty = missing.map((item) => `missing ${item.kind} evidence (${item.id})`);
-    const decision: Decision = failures.length > 0 || score >= 80 ? 'REJECT' : missing.length > 0 || score >= 40 ? 'HOLD' : 'PASS';
+    const decision: Decision =
+      failures.length > 0 || score >= 80
+        ? 'REJECT'
+        : missing.length > 0 || score >= 40
+          ? 'HOLD'
+          : 'PASS';
     if (failures.length > 0) reasons.push(`${failures.length} failing evidence item(s)`);
     return { score, reasons, uncertainty, decision };
   }
