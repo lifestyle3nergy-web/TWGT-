@@ -40,7 +40,8 @@ export function validateExecutionEnvelope(value: ExecutionEnvelope): string[] {
   if (value.evidence.some((item) => item.status === 'missing') && value.decision === 'PASS') {
     errors.push('missing evidence cannot produce PASS');
   }
-  if (value.risk.score < 0 || value.risk.score > 100) errors.push('risk score must be between 0 and 100');
+  if (value.risk.score < 0 || value.risk.score > 100)
+    errors.push('risk score must be between 0 and 100');
   if (value.requiresHumanApproval !== true) errors.push('human approval is mandatory');
   return errors;
 }

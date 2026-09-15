@@ -1,29 +1,29 @@
-import http from "node:http";
-import { healthRoute } from "./routes";
-import { environment } from "@config/environment";
+import http from 'node:http';
+import { healthRoute } from './routes';
+import { environment } from '@config/environment';
 
-const HEALTH_PATHS = new Set(["/", "/health"]);
+const HEALTH_PATHS = new Set(['/', '/health']);
 
 export class Server {
   private server = http.createServer((req, res) => {
     const baseHeaders = {
-      "Content-Type": "application/json",
-      "X-Content-Type-Options": "nosniff",
+      'Content-Type': 'application/json',
+      'X-Content-Type-Options': 'nosniff',
     } as const;
 
     try {
-      const path = (req.url ?? "/").split("?")[0];
+      const path = (req.url ?? '/').split('?')[0];
 
-      if (req.method !== "GET") {
+      if (req.method !== 'GET') {
         res.writeHead(405, {
           ...baseHeaders,
-          Allow: "GET",
+          Allow: 'GET',
         });
 
         res.end(
           JSON.stringify({
-            error: "Method Not Allowed",
-          })
+            error: 'Method Not Allowed',
+          }),
         );
         return;
       }
@@ -33,8 +33,8 @@ export class Server {
 
         res.end(
           JSON.stringify({
-            error: "Not Found",
-          })
+            error: 'Not Found',
+          }),
         );
         return;
       }
@@ -43,20 +43,20 @@ export class Server {
 
       res.writeHead(200, {
         ...baseHeaders,
-        "Content-Length": Buffer.byteLength(body),
+        'Content-Length': Buffer.byteLength(body),
       });
 
       res.end(body);
     } catch (error) {
-      console.error("Failed to handle request:", error);
+      console.error('Failed to handle request:', error);
 
       const body = JSON.stringify({
-        error: "Internal Server Error",
+        error: 'Internal Server Error',
       });
 
       res.writeHead(500, {
         ...baseHeaders,
-        "Content-Length": Buffer.byteLength(body),
+        'Content-Length': Buffer.byteLength(body),
       });
 
       res.end(body);
@@ -65,9 +65,7 @@ export class Server {
 
   public start(): void {
     this.server.listen(environment.port, () => {
-      console.log(
-        `${environment.appName} listening on port ${environment.port}`
-      );
+      console.log(`${environment.appName} listening on port ${environment.port}`);
     });
   }
 

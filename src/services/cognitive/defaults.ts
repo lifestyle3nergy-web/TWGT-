@@ -6,7 +6,7 @@ import {
   type Observer,
   type Responder,
   type Understanding,
-} from "./types";
+} from './types';
 
 /**
  * Baseline observer: captures the incoming signals and stamps the observation

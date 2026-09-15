@@ -1,16 +1,16 @@
-import { currentTimestamp } from "@utils/time";
+import { currentTimestamp } from '@utils/time';
 
 export enum LogLevel {
-  DEBUG = "DEBUG",
-  INFO = "INFO",
-  WARN = "WARN",
-  ERROR = "ERROR",
+  DEBUG = 'DEBUG',
+  INFO = 'INFO',
+  WARN = 'WARN',
+  ERROR = 'ERROR',
 }
 
 export class LoggerService {
   private readonly serviceName: string;
 
-  constructor(serviceName = "TWGT") {
+  constructor(serviceName = 'TWGT') {
     this.serviceName = serviceName;
   }
 
@@ -39,23 +39,15 @@ export class LoggerService {
    * Log errors.
    */
   public error(message: string, error?: unknown): void {
-    this.write(
-      LogLevel.ERROR,
-      error ? `${message} ${String(error)}` : message
-    );
+    this.write(LogLevel.ERROR, error ? `${message} ${String(error)}` : message);
   }
 
   /**
    * Internal log formatter.
    */
-  private write(
-    level: LogLevel,
-    message: string
-  ): void {
+  private write(level: LogLevel, message: string): void {
     const timestamp = currentTimestamp();
 
-    console.log(
-      `[${timestamp}] [${level}] [${this.serviceName}] ${message}`
-    );
+    console.log(`[${timestamp}] [${level}] [${this.serviceName}] ${message}`);
   }
 }
