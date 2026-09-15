@@ -11,7 +11,11 @@ const verifier = join(repoRoot, 'activation/scripts/verify-bootstrap-evidence.mj
 const artifactContent = 'catalog: test\n';
 const artifactDigest = createHash('sha256').update(artifactContent).digest('hex');
 
-function runVerifier(evidence, key = 'REPLACE_WITH_TEAM_ISSUED_BOOTSTRAP_VERIFIER_PUBLIC_KEY', prepareRoot) {
+function runVerifier(
+  evidence,
+  key = 'REPLACE_WITH_TEAM_ISSUED_BOOTSTRAP_VERIFIER_PUBLIC_KEY',
+  prepareRoot,
+) {
   const root = mkdtempSync(join(tmpdir(), 'twgt-bootstrap-test-'));
   const activation = join(root, 'activation');
   mkdirSync(join(activation, 'evidence'), { recursive: true });
@@ -77,11 +81,14 @@ test('rejects digest mismatch', () => {
 
 test('rejects undefined signature scheme after valid key and digest checks', () => {
   const { publicKey } = generateKeyPairSync('ed25519');
-  const result = runVerifier({
-    ...base,
-    digests: { 'catalog.yaml': artifactDigest },
-    signature: { algorithm: 'ED25519', value: 'ZmFrZQ==' },
-  }, publicKey.export({ type: 'spki', format: 'pem' }));
+  const result = runVerifier(
+    {
+      ...base,
+      digests: { 'catalog.yaml': artifactDigest },
+      signature: { algorithm: 'ED25519', value: 'ZmFrZQ==' },
+    },
+    publicKey.export({ type: 'spki', format: 'pem' }),
+  );
   assert.notEqual(result.status, 0);
   assert.match(result.stderr, /unsupported signature algorithm/);
 });
@@ -104,13 +111,17 @@ test('rejects digest artifacts that are symbolic links', () => {
   const { publicKey } = generateKeyPairSync('ed25519');
   const external = join(tmpdir(), 'twgt-bootstrap-external-artifact');
   writeFileSync(external, artifactContent);
-  const result = runVerifier({
-    ...base,
-    digests: { 'outside-link': artifactDigest },
-    signature: { algorithm: 'ED25519', value: 'ZmFrZQ==' },
-  }, publicKey.export({ type: 'spki', format: 'pem' }), (root) => {
-    symlinkSync(external, join(root, 'outside-link'));
-  });
+  const result = runVerifier(
+    {
+      ...base,
+      digests: { 'outside-link': artifactDigest },
+      signature: { algorithm: 'ED25519', value: 'ZmFrZQ==' },
+    },
+    publicKey.export({ type: 'spki', format: 'pem' }),
+    (root) => {
+      symlinkSync(external, join(root, 'outside-link'));
+    },
+  );
   assert.notEqual(result.status, 0);
   assert.match(result.stderr, /must not be a symbolic link/);
 });

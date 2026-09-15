@@ -1,5 +1,5 @@
-import type { Constructor } from "@/types/Constructor";
-import { ServiceMap } from "@utils/ServiceMap";
+import type { Constructor } from '@/types/Constructor';
+import { ServiceMap } from '@utils/ServiceMap';
 
 export class ServiceRegistry {
   private readonly services = new ServiceMap();

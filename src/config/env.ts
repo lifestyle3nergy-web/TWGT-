@@ -40,8 +40,14 @@ const envSchema = z.object({
   REFRESH_EXPIRY: z.string().default('7d'),
 
   // Features
-  ENABLE_TELEMETRY: z.string().transform(v => v === 'true').default('true'),
-  ENABLE_MONITORING: z.string().transform(v => v === 'true').default('true'),
+  ENABLE_TELEMETRY: z
+    .string()
+    .transform((v) => v === 'true')
+    .default('true'),
+  ENABLE_MONITORING: z
+    .string()
+    .transform((v) => v === 'true')
+    .default('true'),
 
   // Logging
   LOG_LEVEL: z.enum(['debug', 'info', 'warn', 'error']).default('info'),
@@ -53,7 +59,10 @@ const envSchema = z.object({
 
   // CORS
   CORS_ORIGIN: z.string().default('*'),
-  CORS_CREDENTIALS: z.string().transform(v => v === 'true').default('true'),
+  CORS_CREDENTIALS: z
+    .string()
+    .transform((v) => v === 'true')
+    .default('true'),
 });
 
 export type EnvConfig = z.infer<typeof envSchema>;
@@ -66,7 +75,7 @@ export function validateEnv(): EnvConfig {
   } catch (error) {
     if (error instanceof z.ZodError) {
       console.error('❌ Environment validation failed:');
-      error.errors.forEach(err => {
+      error.errors.forEach((err) => {
         console.error(`   - ${err.path.join('.')}: ${err.message}`);
       });
       process.exit(1);

@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState } from 'react';
 
 type RepoMetrics = {
   repo: string;
@@ -11,13 +11,13 @@ export default function OrgDashboard() {
   const [metrics, setMetrics] = useState<RepoMetrics[]>([]);
 
   useEffect(() => {
-    fetch("/api/metrics")
-      .then(res => res.json())
+    fetch('/api/metrics')
+      .then((res) => res.json())
       .then(setMetrics);
   }, []);
 
   return (
-    <main style={{ padding: "2rem", fontFamily: "system-ui" }}>
+    <main style={{ padding: '2rem', fontFamily: 'system-ui' }}>
       <h1>TWGT Org‑wide Engineering Dashboard</h1>
       <table>
         <thead>
@@ -29,10 +29,10 @@ export default function OrgDashboard() {
           </tr>
         </thead>
         <tbody>
-          {metrics.map(m => (
+          {metrics.map((m) => (
             <tr key={m.repo}>
               <td>{m.repo}</td>
-              <td>{m.latestRelease ?? "—"}</td>
+              <td>{m.latestRelease ?? '—'}</td>
               <td>{m.ciPassRate}%</td>
               <td>{m.ciFailRate}%</td>
             </tr>

@@ -9,10 +9,12 @@ function checkFile(filePath) {
   const ast = ts.createSourceFile(filePath, source, ts.ScriptTarget.Latest, true, ts.ScriptKind.JS);
   const require = createRequire(filePath);
   function visit(node) {
-    const literal = (ts.isImportDeclaration(node) || ts.isExportDeclaration(node))
-      ? node.moduleSpecifier
-      : ts.isCallExpression(node) && node.expression.kind === ts.SyntaxKind.ImportKeyword
-        ? node.arguments[0] : undefined;
+    const literal =
+      ts.isImportDeclaration(node) || ts.isExportDeclaration(node)
+        ? node.moduleSpecifier
+        : ts.isCallExpression(node) && node.expression.kind === ts.SyntaxKind.ImportKeyword
+          ? node.arguments[0]
+          : undefined;
     if (literal && ts.isStringLiteral(literal)) {
       const specifier = literal.text;
       if (specifier.startsWith('.')) {

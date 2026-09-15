@@ -4,11 +4,11 @@ export interface RouteResponse {
   version: string;
 }
 
-import { environment } from "@config/environment";
+import { environment } from '@config/environment';
 
 export function healthRoute(): RouteResponse {
   return {
-    status: "ok",
+    status: 'ok',
     application: environment.appName,
     version: environment.appVersion,
   };
