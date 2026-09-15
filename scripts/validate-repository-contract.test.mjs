@@ -8,7 +8,10 @@ import test from 'node:test';
 const git = (cwd, args, env = {}) =>
   execFileSync('git', args, { cwd, encoding: 'utf8', env: { ...process.env, ...env } }).trim();
 
-const validator = readFileSync(new URL('./validate-repository-contract.mjs', import.meta.url), 'utf8');
+const validator = readFileSync(
+  new URL('./validate-repository-contract.mjs', import.meta.url),
+  'utf8',
+);
 
 test('PR synthetic merge checkout does not require a three-dot merge base', () => {
   const root = mkdtempSync(join(tmpdir(), 'twgt-contract-'));
