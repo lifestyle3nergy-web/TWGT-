@@ -1,15 +1,15 @@
-import { Application } from "@core/Application";
-import { Container } from "@core/Container";
-import { ServiceCollection } from "@core/ServiceCollection";
-import { ServiceProvider } from "@core/ServiceProvider";
-import { Server } from "@api/server";
-import { LoggerService } from "@services/LoggerService";
+import { Application } from '@core/Application';
+import { Container } from '@core/Container';
+import { ServiceCollection } from '@core/ServiceCollection';
+import { ServiceProvider } from '@core/ServiceProvider';
+import { Server } from '@api/server';
+import { LoggerService } from '@services/LoggerService';
 import {
   CognitiveCycleService,
   EchoInterpreter,
   NoopResponder,
   PassthroughObserver,
-} from "@services/cognitive";
+} from '@services/cognitive';
 
 export class Bootstrap {
   private readonly provider: ServiceProvider;
@@ -21,7 +21,7 @@ export class Bootstrap {
 
     const services = new ServiceCollection(container);
 
-    const cognitiveLogger = new LoggerService("CognitiveCycle");
+    const cognitiveLogger = new LoggerService('CognitiveCycle');
 
     services
       .addSingleton(Application, new Application())
@@ -36,23 +36,21 @@ export class Bootstrap {
         }),
       );
 
-    this.provider = new ServiceProvider(
-      services.build()
-    );
+    this.provider = new ServiceProvider(services.build());
 
     this.application = this.provider.get(Application);
     this.server = this.provider.get(Server);
   }
 
   public async start(): Promise<void> {
-    console.log("Bootstrapping TWGT platform...");
+    console.log('Bootstrapping TWGT platform...');
 
     await this.application.initialize();
     await this.application.start();
 
     this.server.start();
 
-    console.log("TWGT platform is running.");
+    console.log('TWGT platform is running.');
   }
 
   public async stop(): Promise<void> {

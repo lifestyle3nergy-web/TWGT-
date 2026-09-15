@@ -1,4 +1,4 @@
-import type { Constructor } from "@/types/Constructor";
+import type { Constructor } from '@/types/Constructor';
 
 /**
  * Type-safe registry that maps a service constructor to its singleton

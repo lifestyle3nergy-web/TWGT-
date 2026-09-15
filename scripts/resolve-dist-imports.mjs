@@ -31,7 +31,9 @@ function resolveSpecifier(specifier, filePath) {
     if (!target) return specifier;
   }
   const candidates = [target, `${target}.js`, path.join(target, 'index.js')];
-  const resolved = candidates.find(candidate => fs.existsSync(candidate) && fs.statSync(candidate).isFile());
+  const resolved = candidates.find(
+    (candidate) => fs.existsSync(candidate) && fs.statSync(candidate).isFile(),
+  );
   if (!resolved) throw new Error(`Unresolved build import ${specifier} in ${filePath}`);
   const relative = path.relative(path.dirname(filePath), resolved).split(path.sep).join('/');
   return relative.startsWith('.') ? relative : `./${relative}`;
@@ -42,13 +44,16 @@ function rewriteFile(filePath) {
   const ast = ts.createSourceFile(filePath, source, ts.ScriptTarget.Latest, true, ts.ScriptKind.JS);
   const edits = [];
   function visit(node) {
-    const literal = (ts.isImportDeclaration(node) || ts.isExportDeclaration(node))
-      ? node.moduleSpecifier
-      : ts.isCallExpression(node) && node.expression.kind === ts.SyntaxKind.ImportKeyword
-        ? node.arguments[0] : undefined;
+    const literal =
+      ts.isImportDeclaration(node) || ts.isExportDeclaration(node)
+        ? node.moduleSpecifier
+        : ts.isCallExpression(node) && node.expression.kind === ts.SyntaxKind.ImportKeyword
+          ? node.arguments[0]
+          : undefined;
     if (literal && ts.isStringLiteral(literal)) {
       const replacement = resolveSpecifier(literal.text, filePath);
-      if (replacement !== literal.text) edits.push([literal.getStart(ast), literal.end, JSON.stringify(replacement)]);
+      if (replacement !== literal.text)
+        edits.push([literal.getStart(ast), literal.end, JSON.stringify(replacement)]);
     }
     ts.forEachChild(node, visit);
   }

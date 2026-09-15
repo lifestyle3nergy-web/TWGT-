@@ -13,10 +13,7 @@ const forbiddenPathPatterns = [
 ];
 
 for (const file of files) {
-  if (
-    /(^|\/)\.env($|\.)/.test(file) &&
-    !allowedEnvironmentFiles.has(file)
-  ) {
+  if (/(^|\/)\.env($|\.)/.test(file) && !allowedEnvironmentFiles.has(file)) {
     errors.push(`Forbidden tracked path: ${file}`);
   }
 
@@ -39,29 +36,31 @@ let baselineTopLevel;
 
 if (baseRef) {
   try {
-    run(['fetch', '--no-tags', '--depth=1', 'origin', baseRef]);
-  } catch {
-    // The workflow uses fetch-depth: 0, but keep the validator useful locally.
+    run(['fetch', '--no-tags', 'origin', `+refs/heads/${baseRef}:refs/remotes/origin/${baseRef}`]);
+  } catch (error) {
+    errors.push(`Unable to fetch PR base origin/${baseRef}: ${error.message}`);
   }
 
   try {
     const baselineFiles = run(['ls-tree', '-r', '--name-only', `origin/${baseRef}`])
       .split('\n')
       .filter(Boolean);
-    baselineTopLevel = new Set(
-      baselineFiles.map((file) => file.split('/')[0]).filter(Boolean),
-    );
+    baselineTopLevel = new Set(baselineFiles.map((file) => file.split('/')[0]).filter(Boolean));
   } catch (error) {
     errors.push(`Unable to inspect baseline tree origin/${baseRef}: ${error.message}`);
     baselineTopLevel = new Set();
   }
 
   try {
-    changed = run(['diff', '--name-only', `origin/${baseRef}...HEAD`])
-      .split('\n')
-      .filter(Boolean);
-  } catch {
-    errors.push(`Unable to determine PR diff against origin/${baseRef}`);
+    // GitHub pull_request workflows normally check out a synthetic merge
+    // commit. Its first parent is the base side of that merge. Diffing the
+    // first parent to HEAD avoids relying on a three-dot merge-base lookup
+    // that can fail when refs were fetched with incomplete ancestry.
+    const parents = run(['rev-list', '--parents', '-n', '1', 'HEAD']).split(/\s+/).slice(1);
+    const diffBase = parents.length > 1 ? parents[0] : `origin/${baseRef}`;
+    changed = run(['diff', '--name-only', diffBase, 'HEAD']).split('\n').filter(Boolean);
+  } catch (error) {
+    errors.push(`Unable to determine PR diff against origin/${baseRef}: ${error.message}`);
   }
 } else {
   // On a non-PR invocation, the checked-out tree is the baseline.
@@ -71,10 +70,7 @@ if (baseRef) {
 // PR #57 explicitly introduces these boundary surfaces and backs them with
 // ADR-0001. They are approved additions to the frozen main baseline, not
 // silently converted into the baseline itself.
-const approvedTopLevelAdditions = new Set([
-  'REPO-CONTRACT.md',
-  'activation',
-]);
+const approvedTopLevelAdditions = new Set(['REPO-CONTRACT.md', 'activation']);
 
 const topLevel = new Set(files.map((file) => file.split('/')[0]).filter(Boolean));
 for (const entry of topLevel) {
@@ -116,15 +112,11 @@ const packageJsonRequiresAdr = () => {
     const nonDependencyChanges = changedKeys.filter((key) => !dependencyFields.has(key));
 
     if (nonDependencyChanges.length === 0) {
-      console.log(
-        `Dependency-only package.json change: ${changedKeys.join(', ') || 'none'}`,
-      );
+      console.log(`Dependency-only package.json change: ${changedKeys.join(', ') || 'none'}`);
       return false;
     }
 
-    console.log(
-      `Structural package.json fields changed: ${nonDependencyChanges.join(', ')}`,
-    );
+    console.log(`Structural package.json fields changed: ${nonDependencyChanges.join(', ')}`);
     return true;
   } catch (error) {
     errors.push(`Unable to classify package.json change: ${error.message}`);

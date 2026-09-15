@@ -1,6 +1,14 @@
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
+import { createRequire } from 'node:module';
 import test from 'node:test';
+
+const require = createRequire(import.meta.url);
+
+test('installed Pino version matches the approved runtime baseline', () => {
+  const { version } = require('pino/package.json');
+  assert.equal(version, '10.3.1');
+});
 
 const runModule = (source) =>
   spawnSync(process.execPath, ['--input-type=module', '--eval', source], {

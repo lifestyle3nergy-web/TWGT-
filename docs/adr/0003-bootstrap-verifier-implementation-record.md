@@ -112,10 +112,10 @@ PR #68 is open against `main` and has not been merged.
 
 Review remediation at source/test head `943790e` completed successfully in GitHub Actions:
 
-| Workflow | Result |
-|---|---|
-| CodeQL | success |
-| Dependency Review | success |
+| Workflow               | Result  |
+| ---------------------- | ------- |
+| CodeQL                 | success |
+| Dependency Review      | success |
 | Continuous Integration | success |
 
 The remediation closes the recorded schema-validation, fixture, and symlink-containment findings. This documentation update intentionally triggers a fresh merge-reference validation cycle against current `main`. Successful checks authorize only merging the fail-closed verifier; they do not authorize bootstrap activation.

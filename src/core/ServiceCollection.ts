@@ -1,5 +1,5 @@
-import { Container } from "@core/Container";
-import type { Constructor } from "@/types/Constructor";
+import { Container } from '@core/Container';
+import type { Constructor } from '@/types/Constructor';
 
 export class ServiceCollection {
   constructor(private readonly container: Container) {}
@@ -7,10 +7,7 @@ export class ServiceCollection {
   /**
    * Register a singleton instance.
    */
-  public addSingleton<T>(
-    token: Constructor<T>,
-    instance: T
-  ): ServiceCollection {
+  public addSingleton<T>(token: Constructor<T>, instance: T): ServiceCollection {
     this.container.register(token, instance);
     return this;
   }
@@ -22,7 +19,7 @@ export class ServiceCollection {
     services: Array<{
       token: Constructor<unknown>;
       instance: unknown;
-    }>
+    }>,
   ): ServiceCollection {
     for (const service of services) {
       this.container.register(service.token, service.instance);

@@ -1,4 +1,4 @@
-import { CognitiveCycleError } from "./CognitiveCycleError";
+import { CognitiveCycleError } from './CognitiveCycleError';
 import {
   CognitivePhase,
   type CycleInput,
@@ -7,7 +7,7 @@ import {
   type Interpreter,
   type Observer,
   type Responder,
-} from "./types";
+} from './types';
 
 export interface CognitiveCycleDependencies<
   TSignal = unknown,
@@ -28,11 +28,7 @@ export interface CognitiveCycleDependencies<
  * {@link CognitiveCycleError} and re-thrown so callers can react rather than
  * receiving a partial, misleading result.
  */
-export class CognitiveCycleService<
-  TSignal = unknown,
-  TInsight = unknown,
-  TAction = unknown,
-> {
+export class CognitiveCycleService<TSignal = unknown, TInsight = unknown, TAction = unknown> {
   private readonly observer: Observer<TSignal>;
   private readonly interpreter: Interpreter<TSignal, TInsight>;
   private readonly responder: Responder<TInsight, TAction>;
@@ -48,14 +44,10 @@ export class CognitiveCycleService<
   /**
    * Run one full cognitive cycle over the provided input.
    */
-  public async run(
-    input: CycleInput<TSignal>,
-  ): Promise<CycleResult<TSignal, TInsight, TAction>> {
+  public async run(input: CycleInput<TSignal>): Promise<CycleResult<TSignal, TInsight, TAction>> {
     const startedAt = new Date();
 
-    this.logger?.debug(
-      `Cognitive cycle started with ${input.signals.length} signal(s).`,
-    );
+    this.logger?.debug(`Cognitive cycle started with ${input.signals.length} signal(s).`);
 
     const observation = await this.runPhase(CognitivePhase.OBSERVE, () =>
       this.observer.observe(input),
@@ -94,7 +86,7 @@ export class CognitiveCycleService<
       return await execute();
     } catch (error) {
       const wrapped = new CognitiveCycleError(phase, error);
-      this.logger?.error("Cognitive cycle phase failed.", wrapped);
+      this.logger?.error('Cognitive cycle phase failed.', wrapped);
       throw wrapped;
     }
   }
