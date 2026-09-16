@@ -1,0 +1,138 @@
+name: Merge Gates
+
+on:
+  pull_request:
+    branches: [main]
+  merge_group:
+    types: [checks_requested]
+
+permissions:
+  contents: read
+  security-events: write
+  pull-requests: read
+
+concurrency:
+  group: merge-gates-${{ github.event.pull_request.number || github.event.merge_group.head_sha || github.sha }}
+  cancel-in-progress: true
+
+jobs:
+  validate:
+    name: Continuous Integration
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+
+      - name: npm-ci
+        run: npm ci
+
+      - name: lint
+        run: npm run lint
+
+      - name: build
+        run: npm run build
+
+      - name: tests
+        run: npm test
+
+      - name: format-check
+        run: npm run format:check
+
+      - name: audit-high
+        run: npm audit --audit-level=high
+
+  governance:
+    name: Repository Governance
+    runs-on: ubuntu-latest
+    needs: validate
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+
+      - run: npm ci
+
+      - name: validate-repository-contract
+        run: node scripts/validate-repository-contract.mjs
+
+      - name: diff-check
+        run: git diff --check
+
+  sbom-scan:
+    name: SBOM Vulnerability Scan
+    runs-on: ubuntu-latest
+    needs: validate
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Generate SBOM
+        uses: anchore/sbom-action@v0
+        with:
+          path: .
+          format: spdx-json
+          output-file: sbom-head.spdx.json
+
+      - name: Scan SBOM for high or critical vulnerabilities
+        uses: anchore/scan-action@v7
+        with:
+          sbom: sbom-head.spdx.json
+          fail-build: true
+          severity-cutoff: high
+          only-fixed: false
+
+      - name: Upload SBOM
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: sbom-${{ github.sha }}
+          path: sbom-head.spdx.json
+          if-no-files-found: error
+
+  secret-scan:
+    name: Secret Scan
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: gitleaks
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  all-gates:
+    name: All Gates
+    runs-on: ubuntu-latest
+    needs: [validate, governance, sbom-scan, secret-scan]
+    if: always()
+    steps:
+      - name: Require every gate to succeed
+        env:
+          VALIDATE_RESULT: ${{ needs.validate.result }}
+          GOVERNANCE_RESULT: ${{ needs.governance.result }}
+          SBOM_RESULT: ${{ needs.sbom-scan.result }}
+          SECRET_RESULT: ${{ needs.secret-scan.result }}
+        run: |
+          printf 'validate=%s\ngovernance=%s\nsbom=%s\nsecret=%s\n' \
+            "$VALIDATE_RESULT" "$GOVERNANCE_RESULT" "$SBOM_RESULT" "$SECRET_RESULT"
+
+          for result in "$VALIDATE_RESULT" "$GOVERNANCE_RESULT" "$SBOM_RESULT" "$SECRET_RESULT"; do
+            if [ "$result" != "success" ]; then
+              echo "A required merge gate did not succeed; blocking merge."
+              exit 1
+            fi
+          done
