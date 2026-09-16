@@ -1,5 +1,4 @@
 import { describe, expect, it } from 'vitest';
-import { parseEnv } from '../../src/config/env.js';
 
 const requiredEnv = {
   DATABASE_URL: 'postgresql://localhost:5432/twgt_dev',
@@ -7,6 +6,11 @@ const requiredEnv = {
   JWT_SECRET: 'j'.repeat(32),
   REFRESH_SECRET: 'r'.repeat(32),
 };
+
+// env.ts validates process.env at module load, so provide only the required
+// baseline values before importing the parser under test.
+Object.assign(process.env, requiredEnv);
+const { parseEnv } = await import('../../src/config/env.js');
 
 describe('parseEnv', () => {
   it('applies Zod 4-compatible defaults and transforms', () => {
