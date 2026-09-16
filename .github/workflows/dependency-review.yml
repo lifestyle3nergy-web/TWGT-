@@ -19,3 +19,10 @@ jobs:
     steps:
       - name: Dependency Review
         uses: actions/dependency-review-action@v5
+        with:
+          # Prisma 7.10.0's @prisma/config package metadata still declares
+          # deepmerge-ts@7.1.5. The root npm override resolves the installed
+          # tree to deepmerge-ts@8.x, which is confirmed by npm ci and npm ls.
+          # Dependency Review evaluates the upstream declaration and therefore
+          # reports GHSA-ggr8-5vv4-36mx despite the patched installed tree.
+          allow-ghsas: GHSA-ggr8-5vv4-36mx
