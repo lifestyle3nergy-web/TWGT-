@@ -70,7 +70,7 @@ if (baseRef) {
 // PR #57 explicitly introduces these boundary surfaces and backs them with
 // ADR-0001. They are approved additions to the frozen main baseline, not
 // silently converted into the baseline itself.
-const approvedTopLevelAdditions = new Set(['REPO-CONTRACT.md', 'activation']);
+const approvedTopLevelAdditions = new Set(['REPO-CONTRACT.md', 'activation', 'prisma.config.ts']);
 
 const topLevel = new Set(files.map((file) => file.split('/')[0]).filter(Boolean));
 for (const entry of topLevel) {
@@ -84,6 +84,7 @@ const structuralTriggers = [
   /^docs\/governance\//,
   /^docs\/ecosystem-map\.md$/,
   /^activation\//,
+  /^prisma\.config\.(?:js|ts|mjs|cjs|mts|cts)$/,
   /^tsconfig(?:\..*)?\.json$/,
   /^src\/index\./,
   /^\.github\/workflows\//,
