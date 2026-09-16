@@ -1,8 +1,18 @@
-import { PrismaClient } from '@prisma/client';
+import { PrismaPg } from '@prisma/adapter-pg';
+import { PrismaClient } from '@/generated/prisma/client';
 import { logger } from '@config';
+
+const connectionString = process.env.DATABASE_URL;
+
+if (!connectionString) {
+  throw new Error('DATABASE_URL is required to initialize Prisma');
+}
+
+const adapter = new PrismaPg({ connectionString });
 
 const createPrismaClient = () =>
   new PrismaClient({
+    adapter,
     log: [
       { emit: 'event', level: 'query' },
       { emit: 'event', level: 'error' },
@@ -10,7 +20,7 @@ const createPrismaClient = () =>
     ],
   });
 
-const globalForPrisma = global as unknown as {
+const globalForPrisma = globalThis as typeof globalThis & {
   prisma: ReturnType<typeof createPrismaClient> | undefined;
 };
 
@@ -18,14 +28,15 @@ export const prisma = globalForPrisma.prisma ?? createPrismaClient();
 
 if (process.env.NODE_ENV !== 'production') globalForPrisma.prisma = prisma;
 
-// Log database queries in development
 if (process.env.NODE_ENV === 'development') {
-  prisma.$on('query', (e: any) => {
-    logger.debug({ query: e.query, params: e.params, duration: e.duration }, 'Database Query');
+  prisma.$on('query', (event) => {
+    logger.debug(
+      { query: event.query, params: event.params, duration: event.duration },
+      'Database Query',
+    );
   });
 }
 
-// Log database errors
-prisma.$on('error', (e: any) => {
-  logger.error({ error: e.message }, 'Database Error');
+prisma.$on('error', (event) => {
+  logger.error({ error: event.message }, 'Database Error');
 });
