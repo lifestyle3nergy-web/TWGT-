@@ -18,8 +18,15 @@ The repository also needs a Prisma Config file so CLI datasource configuration i
 - Import `PrismaClient` only from the generated client path.
 - Configure Prisma CLI through root `prisma.config.ts` and keep the schema datasource provider declarative.
 - Generate the dependency lockfile with `npm install`; do not hand-edit dependency resolution data.
+- Pin the transitive `mysql2` resolution to a patched 3.24.x release and scope the Prisma `deepmerge-ts` override to the affected `@prisma/config` dependency.
 - Maintain a committed initial migration and validate it against an isolated PostgreSQL database before merge.
 - Do not run migrations against production as part of CI validation.
+
+## Security validation
+
+Prisma 7.10.0's `@prisma/config` package metadata declares `deepmerge-ts@7.1.5`. The repository override resolves the installed dependency tree to `deepmerge-ts@8.x`; clean `npm ci` and `npm audit --audit-level=high` are required to verify that resolution. Dependency Review has a narrowly scoped GHSA exception because it evaluates the upstream declaration rather than the overridden installed tree.
+
+Prisma 7 also introduces a transitive `mysql2` dependency. The lockfile is regenerated with npm after pinning that dependency to a current patched 3.24.x release so the clean-install and audit gates validate the actual resolved tree.
 
 ## Consequences
 
