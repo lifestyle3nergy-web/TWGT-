@@ -23,7 +23,8 @@
     "test:coverage": "vitest run --coverage",
     "db:migrate": "prisma migrate dev",
     "db:push": "prisma db push",
-    "db:studio": "prisma studio"
+    "db:studio": "prisma studio",
+    "validate:source-boundary": "node scripts/validate-source-boundary.mjs"
   },
   "dependencies": {
     "@fastify/cors": "^11.3.0",
