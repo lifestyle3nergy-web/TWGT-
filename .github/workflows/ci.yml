@@ -103,6 +103,9 @@ jobs:
       - name: Run lint and typecheck
         run: npm run lint
 
+      - name: Validate TypeScript source boundary
+        run: npm run validate:source-boundary
+
       - name: Validate build imports and entrypoint syntax
         run: |
           node --check dist/index.js
