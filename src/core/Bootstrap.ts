@@ -1,8 +1,11 @@
+import type { FastifyInstance } from 'fastify';
 import { Application } from '@core/Application';
 import { Container } from '@core/Container';
 import { ServiceCollection } from '@core/ServiceCollection';
 import { ServiceProvider } from '@core/ServiceProvider';
-import { Server } from '@api/server';
+import { bootstrap as createFastifyApp } from '@core/app.bootstrap';
+import { env, logger } from '@config';
+import { prisma, redis } from '@database';
 import { LoggerService } from '@services/LoggerService';
 import {
   CognitiveCycleService,
@@ -14,18 +17,15 @@ import {
 export class Bootstrap {
   private readonly provider: ServiceProvider;
   private readonly application: Application;
-  private readonly server: Server;
+  private app: FastifyInstance | undefined;
 
   constructor() {
     const container = new Container();
-
     const services = new ServiceCollection(container);
-
     const cognitiveLogger = new LoggerService('CognitiveCycle');
 
     services
       .addSingleton(Application, new Application())
-      .addSingleton(Server, new Server())
       .addSingleton(
         CognitiveCycleService,
         new CognitiveCycleService({
@@ -37,24 +37,28 @@ export class Bootstrap {
       );
 
     this.provider = new ServiceProvider(services.build());
-
     this.application = this.provider.get(Application);
-    this.server = this.provider.get(Server);
   }
 
   public async start(): Promise<void> {
-    console.log('Bootstrapping TWGT platform...');
-
     await this.application.initialize();
+
+    await prisma.$connect();
+    this.app = await createFastifyApp();
+
     await this.application.start();
+    await this.app.listen({ port: env.PORT, host: env.HOST });
 
-    this.server.start();
-
-    console.log('TWGT platform is running.');
+    logger.info(`TWGT platform listening at http://${env.HOST}:${env.PORT}`);
   }
 
   public async stop(): Promise<void> {
-    this.server.stop();
+    await this.app?.close();
+    this.app = undefined;
+
+    await redis.quit();
+    await prisma.$disconnect();
+
     await this.application.stop();
   }
 }
