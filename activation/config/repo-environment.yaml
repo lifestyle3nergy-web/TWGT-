@@ -1,0 +1,34 @@
+version: "0.1.0"
+repository: lifestyle3nergy-web/TWGT-
+branch_model:
+  protected_trunk: main
+  working_branch: feat/static-outcome-library
+boundary:
+  root: activation/
+  allowed_subdirectories:
+    - config
+    - schemas
+    - prompts
+    - protocols
+    - scripts
+    - state
+    - evidence
+static_library:
+  manifest: activation/config/outcome-library.yaml
+  schema: activation/schemas/outcome-package.yaml
+  protocol: activation/protocols/outcome-delivery.md
+  assessment_prompt: activation/prompts/outcome-assessor.md
+  sop: activation/protocols/SOP-static-outcome-delivery.md
+evidence:
+  directory: activation/evidence/
+  required_before_ready: true
+quality_gate:
+  required:
+    - repository-contract-validation
+    - json-yaml-validation
+    - adr-compliance-validation
+    - build
+    - test
+    - lint-or-typecheck
+    - security
+    - git-diff-check
