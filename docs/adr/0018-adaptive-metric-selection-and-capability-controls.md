@@ -1,4 +1,4 @@
-# ADR 0010: Adaptive Metric Selection and Expert Capability Controls
+# ADR 0018: Adaptive Metric Selection and Expert Capability Controls
 
 - Status: Proposed
 - Scope: TWGT platform control plane
