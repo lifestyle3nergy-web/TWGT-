@@ -1,0 +1,40 @@
+{
+  "version": 1,
+  "purpose": "Bound predictive CI repair experiments without allowing the model to modify governance.",
+  "exploration": {
+    "strategy": "fibonacci-compatible",
+    "maxCandidates": 3,
+    "maxChangedFiles": 5,
+    "maxChangedLines": 250
+  },
+  "protectedPaths": [
+    ".github/workflows/**",
+    "scripts/validate-repository-contract.mjs",
+    "docs/adr/**",
+    "REPO-CONTRACT.md",
+    "branch-protection/**"
+  ],
+  "requiresHumanApproval": [
+    "dependency-change",
+    "workflow-change",
+    "governance-change",
+    "secret-change",
+    "protected-path-change"
+  ],
+  "validation": [
+    "npm ci",
+    "npm run lint",
+    "npm run build",
+    "npm test",
+    "npm run format:check",
+    "node scripts/validate-repository-contract.mjs",
+    "git diff --check"
+  ],
+  "forbiddenActions": [
+    "force-push",
+    "direct-main-write",
+    "secret-access",
+    "policy-self-modification",
+    "merge-without-review"
+  ]
+}
