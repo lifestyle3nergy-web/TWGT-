@@ -32,7 +32,12 @@ jobs:
       - name: npm-ci
         run: npm ci
 
-      - name: prisma-generate
+      - name: Validate Prisma schema
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/twgt_ci
+        run: npx prisma validate
+
+      - name: Generate Prisma client
         env:
           DATABASE_URL: postgresql://postgres:postgres@localhost:5432/twgt_ci
         run: npx prisma generate
