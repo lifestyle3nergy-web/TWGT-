@@ -10,7 +10,6 @@ type ServerState = 'stopped' | 'starting' | 'running' | 'stopping';
 export class Server {
   private readonly logger = new LoggerService('Server');
   private state: ServerState = 'stopped';
-  private startupResolve: (() => void) | undefined;
   private startupReject: ((error: Error) => void) | undefined;
 
   private readonly server = http.createServer((req, res) => {
@@ -77,7 +76,6 @@ export class Server {
     this.server.on('error', (error: Error) => {
       if (this.state === 'starting' && this.startupReject) {
         const reject = this.startupReject;
-        this.startupResolve = undefined;
         this.startupReject = undefined;
         this.state = 'stopped';
         reject(error);
@@ -102,7 +100,6 @@ export class Server {
     return new Promise((resolve, reject) => {
       const onListening = (): void => {
         this.server.removeListener('listening', onListening);
-        this.startupResolve = undefined;
         this.startupReject = undefined;
         this.state = 'running';
 
@@ -113,7 +110,6 @@ export class Server {
         resolve();
       };
 
-      this.startupResolve = resolve;
       this.startupReject = reject;
       this.server.once('listening', onListening);
 
