@@ -21,6 +21,7 @@ yarn.lock
 pnpm-lock.yaml
 
 # Generated files
+src/generated/prisma/
 *.min.js
 *.min.css
 
