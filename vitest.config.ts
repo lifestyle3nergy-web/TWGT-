@@ -15,6 +15,7 @@ export default defineConfig({
       '@workflows': resolvePath('./src/workflows'),
       '@auth': resolvePath('./src/auth'),
       '@config': resolvePath('./src/config'),
+      '@database': resolvePath('./src/database'),
       '@types': resolvePath('./src/types'),
       '@utils': resolvePath('./src/utils'),
       '@': resolvePath('./src'),
