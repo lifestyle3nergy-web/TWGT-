@@ -88,7 +88,7 @@ describe('Server', () => {
       expect(JSON.parse(body)).toEqual({
         status: 'ok',
         application: 'TWGT',
-        version: 'test',
+        version: '0.2.0-alpha',
       });
     } finally {
       await server.stop();
@@ -156,6 +156,7 @@ describe('Server', () => {
       throw new Error('health failure');
     });
     await server.start();
+    expect(await waitFor(() => isPortAccepting(testPort))).toBe(true);
 
     try {
       const { status, body } = await getJson(testPort);
