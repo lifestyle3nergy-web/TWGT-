@@ -65,17 +65,33 @@ export class Bootstrap {
 
   public async stop(): Promise<void> {
     let serverError: unknown;
+    let applicationError: unknown;
 
     try {
       await this.server.stop();
     } catch (error) {
       serverError = error;
-    } finally {
+    }
+
+    try {
       await this.application.stop();
+    } catch (error) {
+      applicationError = error;
+    }
+
+    if (serverError && applicationError) {
+      throw new AggregateError(
+        [serverError, applicationError],
+        'TWGT shutdown failed for both server and application.',
+      );
     }
 
     if (serverError) {
       throw serverError;
+    }
+
+    if (applicationError) {
+      throw applicationError;
     }
   }
 }
