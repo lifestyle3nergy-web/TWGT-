@@ -27,7 +27,7 @@ describe('LoggerService', () => {
     new LoggerService().warn('warn message');
 
     expect(console.warn).toHaveBeenCalledWith(
-      expect.stringContaining(\`[\${LogLevel.WARN}]\`),
+      expect.stringContaining('[' + LogLevel.WARN + ']'),
     );
     expect(console.log).not.toHaveBeenCalled();
   });
@@ -36,7 +36,7 @@ describe('LoggerService', () => {
     new LoggerService().error('error message');
 
     expect(console.error).toHaveBeenCalledWith(
-      expect.stringContaining(\`[\${LogLevel.ERROR}]\`),
+      expect.stringContaining('[' + LogLevel.ERROR + ']'),
     );
     expect(console.log).not.toHaveBeenCalled();
   });
