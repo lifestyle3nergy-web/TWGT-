@@ -12,6 +12,7 @@ export class Server {
   private state: ServerState = 'stopped';
   private startupReject: ((error: Error) => void) | undefined;
   private startupListening: (() => void) | undefined;
+  private readonly healthRoute: () => RouteResponse;
 
   private readonly server = http.createServer((req, res) => {
     const baseHeaders = {
@@ -73,7 +74,8 @@ export class Server {
     }
   });
 
-  constructor(private readonly healthRoute: () => RouteResponse = healthRoute) {
+  constructor(healthHandler?: () => RouteResponse) {
+    this.healthRoute = healthHandler ?? healthRoute;
     this.server.on('error', (error: Error) => {
       if (this.state === 'starting' && this.startupReject) {
         const reject = this.startupReject;
