@@ -98,7 +98,7 @@ export class Server {
   public start(): Promise<void> {
     if (this.state !== 'stopped') {
       return Promise.reject(
-        new Error(\`Cannot start server while state is "\${this.state}".\`),
+        new Error('Cannot start server while state is "' + this.state + '".'),
       );
     }
 
@@ -112,7 +112,7 @@ export class Server {
         this.state = 'running';
 
         console.log(
-          \`\${environment.appName} listening on port \${environment.port}\`,
+          environment.appName + ' listening on port ' + environment.port,
         );
 
         resolve();
