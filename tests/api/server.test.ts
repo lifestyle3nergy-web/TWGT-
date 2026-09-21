@@ -38,7 +38,7 @@ const getJson = (
 ): Promise<{ status: number; contentType: string | undefined; body: string }> =>
   new Promise((resolve, reject) => {
     http
-      .get(\`http://127.0.0.1:\${port}\`, (res) => {
+      .get('http://127.0.0.1:' + port, (res) => {
         let data = '';
         res.on('data', (chunk) => (data += chunk));
         res.on('end', () =>
