@@ -1,5 +1,5 @@
 import http from 'node:http';
-import { healthRoute } from './routes';
+import { healthRoute, type RouteResponse } from './routes';
 import { environment } from '@config/environment';
 import { LoggerService } from '@services/LoggerService';
 
@@ -11,6 +11,7 @@ export class Server {
   private readonly logger = new LoggerService('Server');
   private state: ServerState = 'stopped';
   private startupReject: ((error: Error) => void) | undefined;
+  private startupListening: (() => void) | undefined;
 
   private readonly server = http.createServer((req, res) => {
     const baseHeaders = {
@@ -46,7 +47,7 @@ export class Server {
         return;
       }
 
-      const body = JSON.stringify(healthRoute());
+      const body = JSON.stringify(this.healthRoute());
 
       res.writeHead(200, {
         ...baseHeaders,
@@ -72,11 +73,17 @@ export class Server {
     }
   });
 
-  constructor() {
+  constructor(private readonly healthRoute: () => RouteResponse = healthRoute) {
     this.server.on('error', (error: Error) => {
       if (this.state === 'starting' && this.startupReject) {
         const reject = this.startupReject;
         this.startupReject = undefined;
+
+        if (this.startupListening) {
+          this.server.removeListener('listening', this.startupListening);
+          this.startupListening = undefined;
+        }
+
         this.state = 'stopped';
         reject(error);
         return;
@@ -91,7 +98,7 @@ export class Server {
   public start(): Promise<void> {
     if (this.state !== 'stopped') {
       return Promise.reject(
-        new Error(`Cannot start server while state is "${this.state}".`),
+        new Error(\`Cannot start server while state is "\${this.state}".\`),
       );
     }
 
@@ -100,23 +107,26 @@ export class Server {
     return new Promise((resolve, reject) => {
       const onListening = (): void => {
         this.server.removeListener('listening', onListening);
+        this.startupListening = undefined;
         this.startupReject = undefined;
         this.state = 'running';
 
         console.log(
-          `${environment.appName} listening on port ${environment.port}`,
+          \`\${environment.appName} listening on port \${environment.port}\`,
         );
 
         resolve();
       };
 
       this.startupReject = reject;
+      this.startupListening = onListening;
       this.server.once('listening', onListening);
 
       try {
         this.server.listen(environment.port);
       } catch (error) {
         this.server.removeListener('listening', onListening);
+        this.startupListening = undefined;
         this.startupReject = undefined;
         this.state = 'stopped';
         reject(error instanceof Error ? error : new Error(String(error)));
