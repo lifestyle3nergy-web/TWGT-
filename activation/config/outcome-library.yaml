@@ -1,0 +1,43 @@
+version: "0.1.0"
+id: twgt-static-outcome-library
+name: TWGT Static Outcome Library
+purpose: "Convert an observed environmental or customer demand into a governed, evidence-backed outcome package."
+status: draft
+type: static-library
+runtime: none
+execution_boundary: "Static artefacts only; dynamic execution remains in an approved VM/service boundary."
+inputs:
+  - demand
+  - environment_context
+  - constraints
+  - available_capabilities
+  - evidence
+process:
+  - observe
+  - understand
+  - define_outcome
+  - map_capabilities
+  - compose
+  - verify
+  - authorise
+  - publish
+outputs:
+  - outcome_brief
+  - capability_map
+  - implementation_plan
+  - evidence_record
+  - decision_record
+decision_states:
+  - BLOCK
+  - REVIEW
+  - READY
+  - ACTION
+  - OPPORTUNITY
+rules:
+  human_authorisation_required: true
+  secrets_allowed: false
+  production_state_allowed: false
+  arbitrary_network_execution: false
+  undocumented_capability_admission: false
+  evidence_required_for_ready: true
+  deterministic_output_schema: true

@@ -1,0 +1,24 @@
+version: "0.1.0"
+registry: twgt-static-capability-registry
+purpose: "Normalize reusable capabilities before composition into an outcome."
+capability_types:
+  static-tool:
+    execution: cli-ci-workstation
+    examples: [security-scanner, formatter, converter]
+  static-library:
+    execution: import-consume
+    examples: [parser, schema-library, sdk]
+  static-skill:
+    execution: human-ai-procedure
+    examples: [repository-health-review, outcome-assessment, release-review]
+  runtime-service:
+    execution: approved-vm-container-service
+    examples: [workflow-orchestrator, inference-service, developer-portal]
+  data-asset:
+    execution: static-or-versioned-resource
+    examples: [dataset, model, template, documentation]
+admission:
+  required_fields: [source, owner, license, version, purpose, interfaces, dependencies, evidence, risk, provenance]
+  states: [candidate, assessed, admitted, rejected]
+composition:
+  principle: "Keep source repositories independently useful; compose capabilities around a defined outcome."
