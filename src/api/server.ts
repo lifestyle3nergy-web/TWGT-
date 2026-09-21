@@ -117,7 +117,6 @@ export class Server {
         this.server.listen(environment.port);
       } catch (error) {
         this.server.removeListener('listening', onListening);
-        this.startupResolve = undefined;
         this.startupReject = undefined;
         this.state = 'stopped';
         reject(error instanceof Error ? error : new Error(String(error)));
