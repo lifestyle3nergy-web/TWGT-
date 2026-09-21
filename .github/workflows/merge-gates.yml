@@ -32,9 +32,6 @@ jobs:
       - name: npm-ci
         run: npm ci
 
-      - name: prisma-generate
-        run: npx prisma generate
-
       - name: lint
         run: npm run lint
 
