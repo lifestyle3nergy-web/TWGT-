@@ -2,12 +2,12 @@ import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import http from 'node:http';
 import net from 'node:net';
 
-/**
- * Resolves once a TCP connection to the port succeeds (server accepting) or
- * rejects with ECONNREFUSED (port free). Used to assert real bind/release
- * behavior instead of relying on synchronous throws, which never happen for
- * asynchronous `listen()`/`close()`.
- */
+const { healthRoute } = vi.hoisted(() => ({
+  healthRoute: vi.fn(),
+}));
+
+vi.mock('@api/routes', () => ({ healthRoute }));
+
 const isPortAccepting = (port: number): Promise<boolean> =>
   new Promise((resolve, reject) => {
     const socket = net
@@ -16,12 +16,12 @@ const isPortAccepting = (port: number): Promise<boolean> =>
         socket.destroy();
         resolve(true);
       })
-      .once('error', (err: NodeJS.ErrnoException) => {
+      .once('error', (error: NodeJS.ErrnoException) => {
         socket.destroy();
-        if (err.code === 'ECONNREFUSED') {
+        if (error.code === 'ECONNREFUSED') {
           resolve(false);
         } else {
-          reject(err);
+          reject(error);
         }
       });
   });
@@ -41,11 +41,7 @@ const waitFor = async (
 
 const getJson = (
   port: number,
-): Promise<{
-  status: number;
-  contentType: string | undefined;
-  body: string;
-}> =>
+): Promise<{ status: number; contentType: string | undefined; body: string }> =>
   new Promise((resolve, reject) => {
     http
       .get(`http://127.0.0.1:${port}`, (res) => {
@@ -70,6 +66,14 @@ describe('Server', () => {
     process.env.PORT = String(testPort);
     vi.resetModules();
     vi.spyOn(console, 'log').mockImplementation(() => undefined);
+    vi.spyOn(console, 'warn').mockImplementation(() => undefined);
+    vi.spyOn(console, 'error').mockImplementation(() => undefined);
+    healthRoute.mockReset();
+    healthRoute.mockReturnValue({
+      status: 'ok',
+      application: 'TWGT',
+      version: 'test',
+    });
   });
 
   afterEach(() => {
@@ -81,48 +85,110 @@ describe('Server', () => {
     vi.restoreAllMocks();
   });
 
-  it('responds to requests with the health payload', async () => {
+  it('starts and serves the health endpoint', async () => {
     const { Server } = await import('@api/server');
     const server = new Server();
-    server.start();
+
+    await server.start();
 
     try {
-      // Wait for the async listen() to complete before issuing the request,
-      // avoiding an intermittent ECONNREFUSED race on slow machines.
       expect(await waitFor(() => isPortAccepting(testPort))).toBe(true);
-
       const { status, contentType, body } = await getJson(testPort);
-      expect(status).toBe(200);
-      expect(contentType).toBe('application/json');
 
-      const payload = JSON.parse(body);
-      expect(payload.status).toBe('ok');
-      expect(payload).toHaveProperty('application');
-      expect(payload).toHaveProperty('version');
+      expect(status).toBe(200);
+      expect(contentType).toContain('application/json');
+      expect(JSON.parse(body)).toEqual({
+        status: 'ok',
+        application: 'TWGT',
+        version: 'test',
+      });
     } finally {
-      server.stop();
+      await server.stop();
     }
   });
 
-  it('binds the port while running and releases it after stop()', async () => {
+  it('supports stop then start without accumulating error listeners', async () => {
     const { Server } = await import('@api/server');
     const server = new Server();
 
-    server.start();
-    expect(await waitFor(() => isPortAccepting(testPort))).toBe(true);
+    const initialErrorListeners = (
+      server as unknown as { server: http.Server }
+    ).server.listenerCount('error');
 
-    server.stop();
-    expect(await waitFor(async () => !(await isPortAccepting(testPort)))).toBe(true);
+    await server.start();
+    const runningErrorListeners = (
+      server as unknown as { server: http.Server }
+    ).server.listenerCount('error');
 
-    // Port is genuinely free, so a fresh server can bind and serve again.
-    const reused = new Server();
-    reused.start();
+    await server.stop();
+    await server.start();
+    const restartedErrorListeners = (
+      server as unknown as { server: http.Server }
+    ).server.listenerCount('error');
+
     try {
-      expect(await waitFor(() => isPortAccepting(testPort))).toBe(true);
-      const { status } = await getJson(testPort);
-      expect(status).toBe(200);
+      expect(runningErrorListeners).toBe(initialErrorListeners);
+      expect(restartedErrorListeners).toBe(initialErrorListeners);
     } finally {
-      reused.stop();
+      await server.stop();
+    }
+  });
+
+  it('rejects startup when the port is already occupied and removes the startup listener', async () => {
+    const blocker = http.createServer();
+    await new Promise<void>((resolve) => blocker.listen(testPort, resolve));
+
+    const { Server } = await import('@api/server');
+    const server = new Server();
+
+    try {
+      await expect(server.start()).rejects.toMatchObject({ code: 'EADDRINUSE' });
+
+      const nativeServer = (server as unknown as { server: http.Server }).server;
+      expect(nativeServer.listenerCount('listening')).toBe(0);
+      expect(nativeServer.listenerCount('error')).toBe(1);
+    } finally {
+      await server.stop();
+      await new Promise<void>((resolve, reject) =>
+        blocker.close((error) => (error ? reject(error) : resolve())),
+      );
+    }
+  });
+
+  it('returns a controlled 500 when the health handler throws', async () => {
+    healthRoute.mockImplementation(() => {
+      throw new Error('health failure');
+    });
+
+    const { Server } = await import('@api/server');
+    const server = new Server();
+    await server.start();
+
+    try {
+      const { status, body } = await getJson(testPort);
+      expect(status).toBe(500);
+      expect(JSON.parse(body)).toEqual({ error: 'Internal Server Error' });
+      expect(console.error).toHaveBeenCalled();
+    } finally {
+      await server.stop();
+    }
+  });
+
+  it('rejects an invalid lifecycle transition deterministically', async () => {
+    const { Server } = await import('@api/server');
+    const server = new Server();
+
+    await expect(server.stop()).resolves.toBeUndefined();
+    await server.start();
+
+    try {
+      await expect(server.start()).rejects.toThrow(
+        'Cannot start server while state is "running".',
+      );
+      await expect(server.stop()).resolves.toBeUndefined();
+      await expect(server.stop()).resolves.toBeUndefined();
+    } finally {
+      await server.stop();
     }
   });
 });
