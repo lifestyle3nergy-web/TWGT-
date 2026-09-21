@@ -1,11 +1,19 @@
 import http from 'node:http';
 import { healthRoute } from './routes';
 import { environment } from '@config/environment';
+import { LoggerService } from '@services/LoggerService';
 
 const HEALTH_PATHS = new Set(['/', '/health']);
 
+type ServerState = 'stopped' | 'starting' | 'running' | 'stopping';
+
 export class Server {
-  private server = http.createServer((req, res) => {
+  private readonly logger = new LoggerService('Server');
+  private state: ServerState = 'stopped';
+  private startupResolve: (() => void) | undefined;
+  private startupReject: ((error: Error) => void) | undefined;
+
+  private readonly server = http.createServer((req, res) => {
     const baseHeaders = {
       'Content-Type': 'application/json',
       'X-Content-Type-Options': 'nosniff',
@@ -48,28 +56,107 @@ export class Server {
 
       res.end(body);
     } catch (error) {
-      console.error('Failed to handle request:', error);
+      this.logger.error('Failed to handle request.', error);
 
-      const body = JSON.stringify({
-        error: 'Internal Server Error',
-      });
+      if (!res.headersSent) {
+        const body = JSON.stringify({
+          error: 'Internal Server Error',
+        });
 
-      res.writeHead(500, {
-        ...baseHeaders,
-        'Content-Length': Buffer.byteLength(body),
-      });
+        res.writeHead(500, {
+          ...baseHeaders,
+          'Content-Length': Buffer.byteLength(body),
+        });
 
-      res.end(body);
+        res.end(body);
+      }
     }
   });
 
-  public start(): void {
-    this.server.listen(environment.port, () => {
-      console.log(`${environment.appName} listening on port ${environment.port}`);
+  constructor() {
+    this.server.on('error', (error: Error) => {
+      if (this.state === 'starting' && this.startupReject) {
+        const reject = this.startupReject;
+        this.startupResolve = undefined;
+        this.startupReject = undefined;
+        this.state = 'stopped';
+        reject(error);
+        return;
+      }
+
+      if (this.state !== 'stopping') {
+        this.logger.error('Server error.', error);
+      }
     });
   }
 
-  public stop(): void {
-    this.server.close();
+  public start(): Promise<void> {
+    if (this.state !== 'stopped') {
+      return Promise.reject(
+        new Error(`Cannot start server while state is "${this.state}".`),
+      );
+    }
+
+    this.state = 'starting';
+
+    return new Promise((resolve, reject) => {
+      const onListening = (): void => {
+        this.server.removeListener('listening', onListening);
+        this.startupResolve = undefined;
+        this.startupReject = undefined;
+        this.state = 'running';
+
+        console.log(
+          `${environment.appName} listening on port ${environment.port}`,
+        );
+
+        resolve();
+      };
+
+      this.startupResolve = resolve;
+      this.startupReject = reject;
+      this.server.once('listening', onListening);
+
+      try {
+        this.server.listen(environment.port);
+      } catch (error) {
+        this.server.removeListener('listening', onListening);
+        this.startupResolve = undefined;
+        this.startupReject = undefined;
+        this.state = 'stopped';
+        reject(error instanceof Error ? error : new Error(String(error)));
+      }
+    });
+  }
+
+  public stop(): Promise<void> {
+    if (this.state === 'stopped') {
+      return Promise.resolve();
+    }
+
+    if (this.state === 'starting') {
+      return Promise.reject(
+        new Error('Cannot stop server while startup is in progress.'),
+      );
+    }
+
+    if (this.state === 'stopping') {
+      return Promise.reject(new Error('Server shutdown is already in progress.'));
+    }
+
+    this.state = 'stopping';
+
+    return new Promise((resolve, reject) => {
+      this.server.close((error?: Error) => {
+        this.state = 'stopped';
+
+        if (error) {
+          reject(error);
+          return;
+        }
+
+        resolve();
+      });
+    });
   }
 }
