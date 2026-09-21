@@ -2,12 +2,6 @@ import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import http from 'node:http';
 import net from 'node:net';
 
-const { healthRoute } = vi.hoisted(() => ({
-  healthRoute: vi.fn(),
-}));
-
-vi.mock('@api/routes', () => ({ healthRoute }));
-
 const isPortAccepting = (port: number): Promise<boolean> =>
   new Promise((resolve, reject) => {
     const socket = net
@@ -44,7 +38,7 @@ const getJson = (
 ): Promise<{ status: number; contentType: string | undefined; body: string }> =>
   new Promise((resolve, reject) => {
     http
-      .get(`http://127.0.0.1:${port}`, (res) => {
+      .get(\`http://127.0.0.1:\${port}\`, (res) => {
         let data = '';
         res.on('data', (chunk) => (data += chunk));
         res.on('end', () =>
@@ -68,12 +62,6 @@ describe('Server', () => {
     vi.spyOn(console, 'log').mockImplementation(() => undefined);
     vi.spyOn(console, 'warn').mockImplementation(() => undefined);
     vi.spyOn(console, 'error').mockImplementation(() => undefined);
-    healthRoute.mockReset();
-    healthRoute.mockReturnValue({
-      status: 'ok',
-      application: 'TWGT',
-      version: 'test',
-    });
   });
 
   afterEach(() => {
@@ -141,12 +129,19 @@ describe('Server', () => {
     const { Server } = await import('@api/server');
     const server = new Server();
 
+    const initialListeningListeners = (
+      server as unknown as { server: http.Server }
+    ).server.listenerCount('listening');
+    const initialErrorListeners = (
+      server as unknown as { server: http.Server }
+    ).server.listenerCount('error');
+
     try {
       await expect(server.start()).rejects.toMatchObject({ code: 'EADDRINUSE' });
 
       const nativeServer = (server as unknown as { server: http.Server }).server;
-      expect(nativeServer.listenerCount('listening')).toBe(0);
-      expect(nativeServer.listenerCount('error')).toBe(1);
+      expect(nativeServer.listenerCount('listening')).toBe(initialListeningListeners);
+      expect(nativeServer.listenerCount('error')).toBe(initialErrorListeners);
     } finally {
       await server.stop();
       await new Promise<void>((resolve, reject) =>
@@ -156,12 +151,10 @@ describe('Server', () => {
   });
 
   it('returns a controlled 500 when the health handler throws', async () => {
-    healthRoute.mockImplementation(() => {
+    const { Server } = await import('@api/server');
+    const server = new Server(() => {
       throw new Error('health failure');
     });
-
-    const { Server } = await import('@api/server');
-    const server = new Server();
     await server.start();
 
     try {
