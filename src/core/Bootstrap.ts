@@ -48,13 +48,34 @@ export class Bootstrap {
     await this.application.initialize();
     await this.application.start();
 
-    this.server.start();
+    try {
+      await this.server.start();
+    } catch (error) {
+      try {
+        await this.application.stop();
+      } catch {
+        // Preserve the original startup failure as the attributable cause.
+      }
+
+      throw error;
+    }
 
     console.log('TWGT platform is running.');
   }
 
   public async stop(): Promise<void> {
-    this.server.stop();
-    await this.application.stop();
+    let serverError: unknown;
+
+    try {
+      await this.server.stop();
+    } catch (error) {
+      serverError = error;
+    } finally {
+      await this.application.stop();
+    }
+
+    if (serverError) {
+      throw serverError;
+    }
   }
 }
