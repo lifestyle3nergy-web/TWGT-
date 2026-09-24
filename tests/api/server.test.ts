@@ -168,6 +168,80 @@ describe('Server', () => {
     }
   });
 
+  it('waits for startup failure before completing stop', async () => {
+    const blocker = http.createServer();
+    await new Promise<void>((resolve) => blocker.listen(testPort, resolve));
+
+    const { Server } = await import('@api/server');
+    const server = new Server();
+
+    try {
+      const startPromise = server.start();
+
+      expect((server as unknown as { state: string }).state).toBe('starting');
+
+      await expect(server.stop()).resolves.toBeUndefined();
+      await expect(startPromise).rejects.toMatchObject({ code: 'EADDRINUSE' });
+      expect((server as unknown as { state: string }).state).toBe('stopped');
+    } finally {
+      await new Promise<void>((resolve, reject) =>
+        blocker.close((error) => (error ? reject(error) : resolve())),
+      );
+    }
+  });
+
+  it('shares concurrent stop calls while shutdown is in progress', async () => {
+    const { Server } = await import('@api/server');
+    const server = new Server();
+
+    await server.start();
+
+    try {
+      const firstStop = server.stop();
+      const secondStop = server.stop();
+
+      await expect(Promise.all([firstStop, secondStop])).resolves.toEqual([
+        undefined,
+        undefined,
+      ]);
+      expect((server as unknown as { state: string }).state).toBe('stopped');
+    } finally {
+      await server.stop();
+    }
+  });
+
+  it('logs runtime server errors but suppresses them during shutdown', async () => {
+    const { Server } = await import('@api/server');
+    const server = new Server();
+    const nativeServer = (
+      server as unknown as { server: http.Server }
+    ).server;
+
+    await server.start();
+
+    try {
+      const runtimeError = new Error('runtime failure');
+      nativeServer.emit('error', runtimeError);
+
+      expect(console.error).toHaveBeenCalledWith(
+        expect.stringContaining('[ERROR] [Server] Server error.'),
+      );
+
+      vi.mocked(console.error).mockClear();
+
+      const stopPromise = server.stop();
+      await stopPromise;
+
+      nativeServer.emit('error', new Error('shutdown failure'));
+
+      expect(console.error).not.toHaveBeenCalledWith(
+        expect.stringContaining('[ERROR] [Server] Server error.'),
+      );
+    } finally {
+      await server.stop();
+    }
+  });
+
   it('rejects an invalid lifecycle transition deterministically', async () => {
     const { Server } = await import('@api/server');
     const server = new Server();
