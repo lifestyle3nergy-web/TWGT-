@@ -12,6 +12,8 @@ export class Server {
   private state: ServerState = 'stopped';
   private startupReject: ((error: Error) => void) | undefined;
   private startupListening: (() => void) | undefined;
+  private startupPromise: Promise<void> | undefined;
+  private shutdownPromise: Promise<void> | undefined;
   private readonly healthRoute: () => RouteResponse;
 
   private readonly server = http.createServer((req, res) => {
@@ -87,6 +89,7 @@ export class Server {
         }
 
         this.state = 'stopped';
+        this.startupPromise = undefined;
         reject(error);
         return;
       }
@@ -111,6 +114,7 @@ export class Server {
         this.server.removeListener('listening', onListening);
         this.startupListening = undefined;
         this.startupReject = undefined;
+        this.startupPromise = undefined;
         this.state = 'running';
 
         console.log(
@@ -131,6 +135,7 @@ export class Server {
         this.startupListening = undefined;
         this.startupReject = undefined;
         this.state = 'stopped';
+        this.startupPromise = undefined;
         reject(error instanceof Error ? error : new Error(String(error)));
       }
     });
@@ -141,29 +146,47 @@ export class Server {
       return Promise.resolve();
     }
 
-    if (this.state === 'starting') {
-      return Promise.reject(
-        new Error('Cannot stop server while startup is in progress.'),
-      );
+    if (this.state === 'stopping') {
+      return this.shutdownPromise ?? Promise.resolve();
     }
 
-    if (this.state === 'stopping') {
-      return Promise.reject(new Error('Server shutdown is already in progress.'));
+    if (this.state === 'starting') {
+      const startupPromise = this.startupPromise;
+
+      if (!startupPromise) {
+        return Promise.resolve();
+      }
+
+      return startupPromise.then(
+        () => this.stop(),
+        () => this.stop(),
+      );
     }
 
     this.state = 'stopping';
 
-    return new Promise((resolve, reject) => {
-      this.server.close((error?: Error) => {
+    const shutdownPromise = new Promise<void>((resolve, reject) => {
+      try {
+        this.server.close((error?: Error) => {
+          this.state = 'stopped';
+
+          if (error) {
+            reject(error);
+            return;
+          }
+
+          resolve();
+        });
+      } catch (error) {
         this.state = 'stopped';
+        reject(error instanceof Error ? error : new Error(String(error)));
+      }
+    });
 
-        if (error) {
-          reject(error);
-          return;
-        }
+    this.shutdownPromise = shutdownPromise;
 
-        resolve();
-      });
+    return shutdownPromise.finally(() => {
+      this.shutdownPromise = undefined;
     });
   }
 }
