@@ -48,13 +48,50 @@ export class Bootstrap {
     await this.application.initialize();
     await this.application.start();
 
-    this.server.start();
+    try {
+      await this.server.start();
+    } catch (error) {
+      try {
+        await this.application.stop();
+      } catch {
+        // Preserve the original startup failure as the attributable cause.
+      }
+
+      throw error;
+    }
 
     console.log('TWGT platform is running.');
   }
 
   public async stop(): Promise<void> {
-    this.server.stop();
-    await this.application.stop();
+    let serverError: unknown;
+    let applicationError: unknown;
+
+    try {
+      await this.server.stop();
+    } catch (error) {
+      serverError = error;
+    }
+
+    try {
+      await this.application.stop();
+    } catch (error) {
+      applicationError = error;
+    }
+
+    if (serverError && applicationError) {
+      throw new AggregateError(
+        [serverError, applicationError],
+        'TWGT shutdown failed for both server and application.',
+      );
+    }
+
+    if (serverError) {
+      throw serverError;
+    }
+
+    if (applicationError) {
+      throw applicationError;
+    }
   }
 }

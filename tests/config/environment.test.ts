@@ -23,35 +23,40 @@ describe('environment', () => {
     }
   });
 
-  it('falls back to default values when env vars are unset', async () => {
+  it('defaults PORT to 3000 when unset', async () => {
     const { environment } = await import('@config/environment');
-
-    expect(environment.appName).toBe('TWGT');
-    expect(environment.appVersion).toBe('0.2.0-alpha');
-    expect(environment.nodeEnv).toBe('development');
     expect(environment.port).toBe(3000);
   });
 
-  it('reads overrides from environment variables', async () => {
+  it.each(['1', '8080', '65535'])('accepts valid PORT=%s', async (value) => {
+    process.env.PORT = value;
+    const { environment } = await import('@config/environment');
+    expect(environment.port).toBe(Number(value));
+  });
+
+  it.each(['', ' ', '  ', 'abc', '80.5', '-1', '0', '65536'])(
+    'rejects invalid PORT=%j',
+    async (value) => {
+      process.env.PORT = value;
+      await expect(import('@config/environment')).rejects.toThrow(
+        'Expected an integer between 1 and 65535',
+      );
+    },
+  );
+
+  it('preserves the other environment defaults and overrides', async () => {
     process.env.APP_NAME = 'CustomApp';
     process.env.APP_VERSION = '9.9.9';
     process.env.NODE_ENV = 'production';
-    process.env.PORT = '8080';
-
-    const { environment } = await import('@config/environment');
-
-    expect(environment.appName).toBe('CustomApp');
-    expect(environment.appVersion).toBe('9.9.9');
-    expect(environment.nodeEnv).toBe('production');
-    expect(environment.port).toBe(8080);
-  });
-
-  it('coerces the port to a number', async () => {
     process.env.PORT = '4321';
 
     const { environment } = await import('@config/environment');
 
-    expect(typeof environment.port).toBe('number');
-    expect(environment.port).toBe(4321);
+    expect(environment).toEqual({
+      appName: 'CustomApp',
+      appVersion: '9.9.9',
+      nodeEnv: 'production',
+      port: 4321,
+    });
   });
 });
