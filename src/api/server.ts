@@ -109,7 +109,7 @@ export class Server {
 
     this.state = 'starting';
 
-    return new Promise((resolve, reject) => {
+    const startupPromise = new Promise<void>((resolve, reject) => {
       const onListening = (): void => {
         this.server.removeListener('listening', onListening);
         this.startupListening = undefined;
@@ -139,6 +139,9 @@ export class Server {
         reject(error instanceof Error ? error : new Error(String(error)));
       }
     });
+
+    this.startupPromise = startupPromise;
+    return startupPromise;
   }
 
   public stop(): Promise<void> {
