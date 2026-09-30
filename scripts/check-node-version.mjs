@@ -19,12 +19,19 @@ import { fileURLToPath, pathToFileURL } from 'node:url';
 
 const DECLARED_NODE_RANGE = '>=24.0.0 <25.0.0';
 
-// The declared range spans exactly one major version: for release builds
-// `major === 24` is precisely the intersection of `>=24.0.0` and `<25.0.0`.
-// Pre-releases of the next major (e.g. `25.0.0-nightly`) are rejected
-// deliberately: strict semver would admit them into `<25.0.0`, but a
-// future-major runtime must never be able to produce a passing verification
-// result. Malformed or missing versions fail closed.
+// The declared range spans exactly one major version, so the gate is
+// major-scoped. Its version contract is explicit:
+//
+//   Supported: 24.x.y, 24.x.y-<prerelease>   (e.g. 24.19.0-nightly.20260101)
+//   Rejected:  25.x.y, 25.x.y-<prerelease>, 23.x.y, malformed or missing
+//
+// This is deliberately NOT npm's semver range resolution. npm excludes ALL
+// prereleases from `>=24.0.0 <25.0.0`, which would reject a 24.x nightly
+// that this gate intentionally admits; and semver precedence ordering places
+// `25.0.0-nightly` before `25.0.0`, which would admit a future-major
+// runtime that this gate intentionally rejects. A future-major runtime must
+// never produce a passing verification result; a current-major prerelease
+// may. Malformed or missing versions fail closed.
 const REQUIRED_NODE_MAJOR = 24;
 
 export function parseNodeVersion(version) {

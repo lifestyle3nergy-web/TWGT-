@@ -41,9 +41,11 @@ Enforce the declared range deterministically in the repository itself:
    after Node setup, before installing dependencies. CI continues to select
    Node `24.19.0` explicitly (never `lts/*`, `node`, or an unpinned major).
 5. Add `tests/tooling/node-gate.test.mjs`, a pure-function regression test of
-   the version predicate (accepts `24.0.0`…`24.99.99`; rejects `23.11.0`,
-   `25.0.0`, `26.4.0`, and malformed input) that does not require installing
-   multiple Node runtimes.
+   the version predicate (accepts `24.0.0`…`24.99.99` plus current-major
+   prereleases such as `24.19.0-nightly.20260101`; rejects `23.11.0`,
+   `25.0.0`, next-major prereleases such as `25.0.0-nightly.1`, `26.4.0`,
+   and malformed input) that does not require installing multiple Node
+   runtimes.
 6. The gate cross-checks that `package.json` `engines.node` still equals the
    enforced range and fails closed if the two drift apart, forcing any range
    change to update the script, the package manifest, and this ADR together.

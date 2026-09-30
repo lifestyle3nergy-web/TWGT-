@@ -7,6 +7,9 @@ import {
 } from '../../scripts/check-node-version.mjs';
 
 test('node gate accepts runtimes inside >=24.0.0 <25.0.0', () => {
+  // Contract (ADR-0004): the gate is major-scoped, not an npm-semver range
+  // check. Current-major prereleases (24.x.y-*) are deliberately accepted;
+  // npm range resolution would exclude them.
   for (const version of ['24.0.0', '24.19.0', '24.99.99', 'v24.19.0', '24.19.0-nightly.20260101']) {
     assert.equal(isSupportedNodeVersion(version), true, version);
   }
