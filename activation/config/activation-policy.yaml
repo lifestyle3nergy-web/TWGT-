@@ -1,0 +1,43 @@
+# TWGT activation policy
+version: "1"
+
+policy:
+  id: "twgt-activation-policy"
+  mode: "verification-gated"
+  defaultTransition: "deny"
+
+activation:
+  required:
+    - repositoryCatalog
+    - activationPolicy
+    - verifierKey
+    - bootstrapEvidence
+    - contractSchema
+    - nucleusCommit
+    - rollbackPin
+
+transitions:
+  proposed:
+    allowedTo:
+      - verified
+  verified:
+    allowedTo:
+      - active
+      - rollback
+  active:
+    allowedTo:
+      - suspended
+      - rollback
+  suspended:
+    allowedTo:
+      - verified
+  rollback:
+    allowedTo:
+      - verified
+
+failurePolicy:
+  invalidEvidence: "deny"
+  invalidSignature: "deny"
+  missingContract: "deny"
+  missingRollbackPin: "deny"
+  catalogDrift: "deny"
