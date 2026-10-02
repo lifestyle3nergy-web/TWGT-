@@ -1,0 +1,24 @@
+{
+  "schemaVersion": "1.0.0",
+  "status": "unissued",
+  "evidenceId": "twgt-bootstrap:20260908T093025Z",
+  "repository": "lifestyle3nergy-web/TWGT-",
+  "nucleusId": "twgt-control-nucleus",
+  "nucleusVersion": "1.0.0-beta.1",
+  "nucleusTag": "twgt-nucleus-v1.0.0-beta.1",
+  "rollbackPin": "5d36c197856ae14ce79482554f9baee8e5893e8e",
+  "rollbackTag": "phase-1-foundation-complete",
+  "digests": {
+    "catalog/repositories.yaml": "sha256:d425ec8cd09e9ba8442ad38c9d8dfb712e7d490ea7e80b32745ec43f8b98c6cc",
+    "activation/config/activation-policy.yaml": "sha256:8c6d875d327e8f87c11d1eff2d02ec209a9e5169d42aa143d60402096edc0f6d"
+  },
+  "cryptography": {
+    "algorithm": "Ed25519",
+    "publicKeyEncoding": "base64",
+    "signatureEncoding": "base64",
+    "canonicalization": "RFC 8785 JCS",
+    "digestAlgorithm": "SHA-256",
+    "signatureType": "detached",
+    "keyId": "btc-001-root-v1"
+  }
+}
