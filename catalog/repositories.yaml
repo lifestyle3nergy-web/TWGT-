@@ -1,0 +1,16 @@
+# TWGT repository catalog.
+# Replace placeholder desired states with the authoritative governance baseline
+# before treating this file as production policy.
+
+version: "1"
+repositories:
+  - id: "lifestyle3nergy-web/TWGT-"
+    role: "control-nucleus"
+    desiredState: "active"
+    governance:
+      managed: true
+      verificationRequired: true
+      driftPolicy: "fail-closed"
+
+# Add the remaining authoritative repositories here.
+# Do not infer the authoritative inventory from this template.

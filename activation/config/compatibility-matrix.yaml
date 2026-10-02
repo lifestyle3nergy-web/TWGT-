@@ -1,0 +1,10 @@
+# Optional TWGT compatibility matrix.
+version: "1"
+
+matrix:
+  - nucleusVersion: "1.0.0-beta.1"
+    node: ">=24.0.0 <25.0.0"
+    policyVersion: "1"
+    status: "candidate"
+
+# Extend only from an authoritative compatibility decision.
