@@ -153,6 +153,7 @@ jobs:
           source = [
               ("checkout", "CHECKOUT_OUTCOME"),
               ("identity", "IDENTITY_OUTCOME"),
+              ("node", "NODE_OUTCOME"),
               ("toolchain", "TOOLCHAIN_OUTCOME"),
               ("dependencies", "DEPENDENCIES_OUTCOME"),
               ("lint", "LINT_OUTCOME"),
