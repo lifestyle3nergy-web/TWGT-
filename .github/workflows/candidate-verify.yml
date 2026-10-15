@@ -1,0 +1,207 @@
+# .github/workflows/candidate-verify.yml
+#
+# Candidate-bound verification for lifestyle3nergy-web/TWGT-
+# Trigger: pull_request against main.
+# Identity: every run asserts checkout HEAD == PR head SHA.
+# Output: non-authorizing verification manifest. Never an admission decision.
+#
+# Forbidden: do NOT change "on" to pull_request_target. That would run base-branch
+# workflow logic in a privileged context against untrusted PR content.
+
+name: Candidate Verify
+
+on:
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize, reopened]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: candidate-verify-${{ github.event.pull_request.head.sha }}
+  cancel-in-progress: false
+
+jobs:
+  verify:
+    name: Verify candidate head
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout candidate head
+        id: checkout
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Assert checkout SHA equals PR head SHA
+        id: identity
+        shell: bash
+        env:
+          EXPECTED_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          set -euo pipefail
+          actual="$(git rev-parse HEAD)"
+          echo "expected=$EXPECTED_SHA"
+          echo "actual=$actual"
+          if [ "$actual" != "$EXPECTED_SHA" ]; then
+            echo "::error::Checkout SHA $actual does not match PR head SHA $EXPECTED_SHA"
+            exit 27 # CANDIDATE_IDENTITY_MISMATCH
+          fi
+          echo "head_sha=$actual" >> "$GITHUB_OUTPUT"
+
+      - name: Setup Node
+        id: node
+        uses: actions/setup-node@1d0ff469b7ec7b3cb9d8673fde0c81c44821de2a # v4.0.2
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+
+      - name: Record toolchain
+        id: toolchain
+        shell: bash
+        run: |
+          set -euo pipefail
+          node --version
+          npm --version
+          git rev-parse HEAD
+
+      - name: Install dependencies (gate: dependencies)
+        id: dependencies
+        run: npm ci
+
+      - name: Lint (gate: lint)
+        id: lint
+        run: npm run lint
+
+      - name: Build (gate: build)
+        id: build
+        run: npm run build
+
+      - name: Test (gate: test)
+        id: test
+        run: npm test
+
+      - name: Format check (gate: format)
+        id: format
+        run: npm run format:check
+
+      - name: Repository contract validation (gate: contract)
+        id: contract
+        run: node scripts/validate-repository-contract.mjs
+
+      - name: Whitespace and diff check (gate: diff-check)
+        id: diff_check
+        run: git diff --check
+
+      - name: High-severity dependency audit (gate: audit)
+        id: audit
+        run: npm audit --audit-level=high
+
+      # Always runs to preserve outcomes. This step never changes the result
+      # of any mandatory gate and emits a non-authorizing manifest only.
+      - name: Emit non-authorizing verification manifest
+        id: manifest
+        if: always()
+        shell: bash
+        env:
+          EXPECTED_SHA: ${{ github.event.pull_request.head.sha }}
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          RUN_ID: ${{ github.run_id }}
+          JOB_STATUS: ${{ job.status }}
+          CHECKOUT_OUTCOME: ${{ steps.checkout.outcome }}
+          IDENTITY_OUTCOME: ${{ steps.identity.outcome }}
+          NODE_OUTCOME: ${{ steps.node.outcome }}
+          TOOLCHAIN_OUTCOME: ${{ steps.toolchain.outcome }}
+          DEPENDENCIES_OUTCOME: ${{ steps.dependencies.outcome }}
+          LINT_OUTCOME: ${{ steps.lint.outcome }}
+          BUILD_OUTCOME: ${{ steps.build.outcome }}
+          TEST_OUTCOME: ${{ steps.test.outcome }}
+          FORMAT_OUTCOME: ${{ steps.format.outcome }}
+          CONTRACT_OUTCOME: ${{ steps.contract.outcome }}
+          DIFF_CHECK_OUTCOME: ${{ steps.diff_check.outcome }}
+          AUDIT_OUTCOME: ${{ steps.audit.outcome }}
+        run: |
+          set -euo pipefail
+          mkdir -p evidence
+          python3 - <<'PY'
+          import json
+          import os
+          import subprocess
+          from pathlib import Path
+
+          def normalize(value):
+              if value == "success":
+                  return "PASS"
+              if value == "failure":
+                  return "FAIL"
+              if value == "skipped":
+                  return "SKIPPED"
+              return "UNAVAILABLE"
+
+          try:
+              actual_sha = subprocess.check_output(
+                  ["git", "rev-parse", "HEAD"], text=True, stderr=subprocess.DEVNULL
+              ).strip()
+          except Exception:
+              actual_sha = None
+
+          source = [
+              ("checkout", "CHECKOUT_OUTCOME"),
+              ("identity", "IDENTITY_OUTCOME"),
+              ("toolchain", "TOOLCHAIN_OUTCOME"),
+              ("dependencies", "DEPENDENCIES_OUTCOME"),
+              ("lint", "LINT_OUTCOME"),
+              ("build", "BUILD_OUTCOME"),
+              ("test", "TEST_OUTCOME"),
+              ("format", "FORMAT_OUTCOME"),
+              ("contract", "CONTRACT_OUTCOME"),
+              ("diff-check", "DIFF_CHECK_OUTCOME"),
+              ("audit", "AUDIT_OUTCOME"),
+          ]
+          gates = []
+          for gate_id, env_name in source:
+              outcome = os.environ.get(env_name, "")
+              result = normalize(outcome)
+              gates.append({
+                  "gate_id": gate_id,
+                  "result": result,
+                  "reason_code": (
+                      "GATE_PASS" if result == "PASS"
+                      else "GATE_" + result
+                  ),
+              })
+
+          all_pass = all(g["result"] == "PASS" for g in gates)
+          identity_pass = os.environ.get("IDENTITY_OUTCOME") == "success"
+          manifest = {
+              "schema_version": "1.0.0-draft.1",
+              "artifact_class": "CANDIDATE_VERIFICATION_MANIFEST",
+              "authorizing": False,
+              "candidate_head_sha": os.environ["EXPECTED_SHA"],
+              "observed_checkout_sha": actual_sha,
+              "base_sha": os.environ["BASE_SHA"],
+              "pull_request": int(os.environ["PR_NUMBER"]),
+              "run_id": os.environ["RUN_ID"],
+              "job_status": os.environ["JOB_STATUS"],
+              "result": "ALL_CHECKS_PASSED" if all_pass and identity_pass else "HOLD",
+              "gates": gates,
+          }
+          Path("evidence/manifest.json").write_text(
+              json.dumps(manifest, indent=2) + "\n", encoding="utf-8"
+          )
+          print(json.dumps(manifest, indent=2))
+          PY
+
+      - name: Upload non-authorizing evidence manifest
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: candidate-evidence-${{ github.event.pull_request.head.sha }}
+          path: evidence/manifest.json
+          retention-days: 90
+          if-no-files-found: error
