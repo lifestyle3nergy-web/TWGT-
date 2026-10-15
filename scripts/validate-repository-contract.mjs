@@ -77,6 +77,7 @@ const approvedTopLevelAdditions = new Set([
   'activation',
   'prisma.config.ts',
   '.twgt',
+  'schemas',
 ]);
 
 const topLevel = new Set(files.map((file) => file.split('/')[0]).filter(Boolean));
