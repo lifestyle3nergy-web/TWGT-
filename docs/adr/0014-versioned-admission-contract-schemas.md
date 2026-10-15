@@ -1,4 +1,6 @@
-# ADR-0003 — Versioned admission-contract schema publication
+# ADR-0014: Versioned admission-contract schema publication
+
+- **Decision owners:** TWGT maintainers
 
 **Status:** Proposed — requires human review before merge  
 **Date:** 2026-10-15  
