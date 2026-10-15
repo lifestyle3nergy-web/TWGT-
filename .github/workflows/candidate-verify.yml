@@ -1,12 +1,11 @@
-# .github/workflows/candidate-verify.yml
-#
 # Candidate-bound verification for lifestyle3nergy-web/TWGT-
-# Trigger: pull_request against main.
-# Identity: every run asserts checkout HEAD == PR head SHA.
-# Output: non-authorizing verification manifest. Never an admission decision.
 #
-# Forbidden: do NOT change "on" to pull_request_target. That would run base-branch
-# workflow logic in a privileged context against untrusted PR content.
+# Trigger: pull_request against main.
+# Identity: every run asserts checkout HEAD == the PR head SHA.
+# Output: non-authorizing evidence manifest. Never an admission decision.
+#
+# Forbidden: do NOT change "on" to pull_request_target.
+# Forbidden: do NOT add continue-on-error to mandatory gates.
 
 name: Candidate Verify
 
@@ -19,7 +18,7 @@ permissions:
   contents: read
 
 concurrency:
-  group: candidate-verify-${{ github.event.pull_request.head.sha }}
+  group: candidate-verify-\${{ github.event.pull_request.head.sha }}
   cancel-in-progress: false
 
 jobs:
@@ -33,7 +32,7 @@ jobs:
         id: checkout
         uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
         with:
-          ref: ${{ github.event.pull_request.head.sha }}
+          ref: \${{ github.event.pull_request.head.sha }}
           fetch-depth: 0
           persist-credentials: false
 
@@ -41,7 +40,7 @@ jobs:
         id: identity
         shell: bash
         env:
-          EXPECTED_SHA: ${{ github.event.pull_request.head.sha }}
+          EXPECTED_SHA: \${{ github.event.pull_request.head.sha }}
         run: |
           set -euo pipefail
           actual="$(git rev-parse HEAD)"
@@ -49,7 +48,7 @@ jobs:
           echo "actual=$actual"
           if [ "$actual" != "$EXPECTED_SHA" ]; then
             echo "::error::Checkout SHA $actual does not match PR head SHA $EXPECTED_SHA"
-            exit 27 # CANDIDATE_IDENTITY_MISMATCH
+            exit 27
           fi
           echo "head_sha=$actual" >> "$GITHUB_OUTPUT"
 
@@ -69,140 +68,136 @@ jobs:
           npm --version
           git rev-parse HEAD
 
-      - name: Install dependencies (gate: dependencies)
+      - name: Install dependencies
         id: dependencies
         run: npm ci
 
-      - name: Lint (gate: lint)
+      - name: Lint
         id: lint
         run: npm run lint
 
-      - name: Build (gate: build)
+      - name: Build
         id: build
         run: npm run build
 
-      - name: Test (gate: test)
+      - name: Test
         id: test
         run: npm test
 
-      - name: Format check (gate: format)
+      - name: Format check
         id: format
         run: npm run format:check
 
-      - name: Repository contract validation (gate: contract)
+      - name: Repository contract validation
         id: contract
         run: node scripts/validate-repository-contract.mjs
 
-      - name: Whitespace and diff check (gate: diff-check)
+      - name: Whitespace and diff check
         id: diff_check
-        run: git diff --check
+        shell: bash
+        env:
+          BASE_SHA: \${{ github.event.pull_request.base.sha }}
+          EXPECTED_SHA: \${{ github.event.pull_request.head.sha }}
+        run: |
+          set -euo pipefail
+          git diff --check "$BASE_SHA" "$EXPECTED_SHA"
 
-      - name: High-severity dependency audit (gate: audit)
+      - name: Dependency audit
         id: audit
         run: npm audit --audit-level=high
 
-      # Always runs to preserve outcomes. This step never changes the result
-      # of any mandatory gate and emits a non-authorizing manifest only.
-      - name: Emit non-authorizing verification manifest
-        id: manifest
+      - name: Emit non-authorizing evidence manifest
         if: always()
         shell: bash
         env:
-          EXPECTED_SHA: ${{ github.event.pull_request.head.sha }}
-          BASE_SHA: ${{ github.event.pull_request.base.sha }}
-          PR_NUMBER: ${{ github.event.pull_request.number }}
-          RUN_ID: ${{ github.run_id }}
-          JOB_STATUS: ${{ job.status }}
-          CHECKOUT_OUTCOME: ${{ steps.checkout.outcome }}
-          IDENTITY_OUTCOME: ${{ steps.identity.outcome }}
-          NODE_OUTCOME: ${{ steps.node.outcome }}
-          TOOLCHAIN_OUTCOME: ${{ steps.toolchain.outcome }}
-          DEPENDENCIES_OUTCOME: ${{ steps.dependencies.outcome }}
-          LINT_OUTCOME: ${{ steps.lint.outcome }}
-          BUILD_OUTCOME: ${{ steps.build.outcome }}
-          TEST_OUTCOME: ${{ steps.test.outcome }}
-          FORMAT_OUTCOME: ${{ steps.format.outcome }}
-          CONTRACT_OUTCOME: ${{ steps.contract.outcome }}
-          DIFF_CHECK_OUTCOME: ${{ steps.diff_check.outcome }}
-          AUDIT_OUTCOME: ${{ steps.audit.outcome }}
+          EXPECTED_SHA: \${{ github.event.pull_request.head.sha }}
+          BASE_SHA: \${{ github.event.pull_request.base.sha }}
+          PR_NUMBER: \${{ github.event.pull_request.number }}
+          RUN_ID: \${{ github.run_id }}
+          RUN_ATTEMPT: \${{ github.run_attempt }}
+          JOB_STATUS: \${{ job.status }}
+          OUTCOME_CHECKOUT: \${{ steps.checkout.outcome }}
+          OUTCOME_IDENTITY: \${{ steps.identity.outcome }}
+          OUTCOME_NODE: \${{ steps.node.outcome }}
+          OUTCOME_DEPS: \${{ steps.dependencies.outcome }}
+          OUTCOME_LINT: \${{ steps.lint.outcome }}
+          OUTCOME_BUILD: \${{ steps.build.outcome }}
+          OUTCOME_TEST: \${{ steps.test.outcome }}
+          OUTCOME_FORMAT: \${{ steps.format.outcome }}
+          OUTCOME_CONTRACT: \${{ steps.contract.outcome }}
+          OUTCOME_DIFF: \${{ steps.diff_check.outcome }}
+          OUTCOME_AUDIT: \${{ steps.audit.outcome }}
         run: |
           set -euo pipefail
-          mkdir -p evidence
-          python3 - <<'PY'
-          import json
-          import os
-          import subprocess
-          from pathlib import Path
+          mkdir -p activation/evidence
+          actual="$(git rev-parse HEAD 2>/dev/null || true)"
+          jq -n \
+            --arg schema_version "1.0.0-draft.1" \
+            --arg expected "$EXPECTED_SHA" \
+            --arg observed "$actual" \
+            --arg base "$BASE_SHA" \
+            --argjson pr "$PR_NUMBER" \
+            --arg run "$RUN_ID" \
+            --arg attempt "$RUN_ATTEMPT" \
+            --arg job "$JOB_STATUS" \
+            --arg out_checkout "$OUTCOME_CHECKOUT" \
+            --arg out_identity "$OUTCOME_IDENTITY" \
+            --arg out_node "$OUTCOME_NODE" \
+            --arg out_deps "$OUTCOME_DEPS" \
+            --arg out_lint "$OUTCOME_LINT" \
+            --arg out_build "$OUTCOME_BUILD" \
+            --arg out_test "$OUTCOME_TEST" \
+            --arg out_format "$OUTCOME_FORMAT" \
+            --arg out_contract "$OUTCOME_CONTRACT" \
+            --arg out_diff "$OUTCOME_DIFF" \
+            --arg out_audit "$OUTCOME_AUDIT" \
+            'def normalize:
+               if . == "success" then "PASS"
+               elif . == "failure" then "FAIL"
+               elif . == "skipped" then "SKIPPED"
+               else "UNAVAILABLE" end;
+             def gate($id; $outcome):
+               ($outcome | normalize) as $result |
+               {gate_id: $id, result: $result,
+                reason_code: (if $result == "PASS" then "GATE_PASS"
+                              else ($id | ascii_upcase | gsub("-"; "_")) + "_" + $result end)};
+             {
+               schema_version: $schema_version,
+               artifact_class: "CANDIDATE_VERIFICATION_MANIFEST",
+               authorizing: false,
+               candidate_head_sha: $expected,
+               observed_checkout_sha: (if $observed == "" then null else $observed end),
+               base_sha: $base,
+               pull_request: $pr,
+               run_id: $run,
+               run_attempt: $attempt,
+               job_status: $job,
+               result: (if $expected == $observed
+                         and ([$out_checkout,$out_identity,$out_node,$out_deps,$out_lint,
+                               $out_build,$out_test,$out_format,$out_contract,$out_diff,$out_audit]
+                              | all(. == "success"))
+                         then "ALL_CHECKS_PASSED" else "HOLD" end),
+               gates: [
+                 gate("checkout"; $out_checkout),
+                 gate("identity"; $out_identity),
+                 gate("node"; $out_node),
+                 gate("dependencies"; $out_deps),
+                 gate("lint"; $out_lint),
+                 gate("build"; $out_build),
+                 gate("test"; $out_test),
+                 gate("format"; $out_format),
+                 gate("contract"; $out_contract),
+                 gate("diff-check"; $out_diff),
+                 gate("audit"; $out_audit)
+               ]
+             }' > "activation/evidence/candidate-verify-$EXPECTED_SHA.json"
+          jq . "activation/evidence/candidate-verify-$EXPECTED_SHA.json"
 
-          def normalize(value):
-              if value == "success":
-                  return "PASS"
-              if value == "failure":
-                  return "FAIL"
-              if value == "skipped":
-                  return "SKIPPED"
-              return "UNAVAILABLE"
-
-          try:
-              actual_sha = subprocess.check_output(
-                  ["git", "rev-parse", "HEAD"], text=True, stderr=subprocess.DEVNULL
-              ).strip()
-          except Exception:
-              actual_sha = None
-
-          source = [
-              ("checkout", "CHECKOUT_OUTCOME"),
-              ("identity", "IDENTITY_OUTCOME"),
-              ("node", "NODE_OUTCOME"),
-              ("toolchain", "TOOLCHAIN_OUTCOME"),
-              ("dependencies", "DEPENDENCIES_OUTCOME"),
-              ("lint", "LINT_OUTCOME"),
-              ("build", "BUILD_OUTCOME"),
-              ("test", "TEST_OUTCOME"),
-              ("format", "FORMAT_OUTCOME"),
-              ("contract", "CONTRACT_OUTCOME"),
-              ("diff-check", "DIFF_CHECK_OUTCOME"),
-              ("audit", "AUDIT_OUTCOME"),
-          ]
-          gates = []
-          for gate_id, env_name in source:
-              outcome = os.environ.get(env_name, "")
-              result = normalize(outcome)
-              gates.append({
-                  "gate_id": gate_id,
-                  "result": result,
-                  "reason_code": (
-                      "GATE_PASS" if result == "PASS"
-                      else "GATE_" + result
-                  ),
-              })
-
-          all_pass = all(g["result"] == "PASS" for g in gates)
-          identity_pass = os.environ.get("IDENTITY_OUTCOME") == "success"
-          manifest = {
-              "schema_version": "1.0.0-draft.1",
-              "artifact_class": "CANDIDATE_VERIFICATION_MANIFEST",
-              "authorizing": False,
-              "candidate_head_sha": os.environ["EXPECTED_SHA"],
-              "observed_checkout_sha": actual_sha,
-              "base_sha": os.environ["BASE_SHA"],
-              "pull_request": int(os.environ["PR_NUMBER"]),
-              "run_id": os.environ["RUN_ID"],
-              "job_status": os.environ["JOB_STATUS"],
-              "result": "ALL_CHECKS_PASSED" if all_pass and identity_pass else "HOLD",
-              "gates": gates,
-          }
-          Path("evidence/manifest.json").write_text(
-              json.dumps(manifest, indent=2) + "\n", encoding="utf-8"
-          )
-          print(json.dumps(manifest, indent=2))
-          PY
-
-      - name: Upload non-authorizing evidence manifest
+      - name: Upload evidence manifest
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
-          name: candidate-evidence-${{ github.event.pull_request.head.sha }}
-          path: evidence/manifest.json
+          name: candidate-evidence-\${{ github.event.pull_request.head.sha }}
+          path: activation/evidence/candidate-verify-\${{ github.event.pull_request.head.sha }}.json
           retention-days: 90
           if-no-files-found: error
