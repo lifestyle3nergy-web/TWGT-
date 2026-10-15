@@ -1,0 +1,148 @@
+name: Candidate Verify (non-authorizing)
+run-name: Candidate Verify ${{ inputs.head_sha }}
+
+on:
+  workflow_dispatch:
+    inputs:
+      head_sha:
+        description: Exact 40-character candidate head SHA to verify
+        required: true
+        type: string
+
+permissions:
+  contents: read
+  actions: read
+
+concurrency:
+  group: candidate-verify-${{ inputs.head_sha }}
+  cancel-in-progress: false
+
+jobs:
+  verify:
+    name: Verify exact candidate head
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Validate requested SHA
+        id: input
+        env:
+          HEAD_SHA: ${{ inputs.head_sha }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          [[ "$HEAD_SHA" =~ ^[a-f0-9]{40}$ ]] || { echo "head_sha must be a 40-character lowercase Git SHA"; exit 1; }
+
+      - name: Checkout exact candidate
+        id: checkout
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: ${{ inputs.head_sha }}
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Assert checkout identity
+        id: identity
+        env:
+          HEAD_SHA: ${{ inputs.head_sha }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          actual="$(git rev-parse HEAD)"
+          test "$actual" = "$HEAD_SHA"
+          printf 'candidate_head_sha=%s\n' "$actual"
+
+      - name: Set up Node.js
+        id: node
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+          package-manager-cache: false
+
+      - name: Install dependencies
+        id: install
+        run: npm ci
+
+      - name: Lint and typecheck
+        id: lint
+        run: npm run lint
+
+      - name: Build
+        id: build
+        run: npm run build
+
+      - name: Tests
+        id: tests
+        run: npm test
+
+      - name: Format check
+        id: format
+        run: npm run format:check
+
+      - name: Repository contract
+        id: contract
+        run: node scripts/validate-repository-contract.mjs
+
+      - name: Diff check
+        id: diff
+        run: git diff --check
+
+      - name: Dependency audit
+        id: audit
+        run: npm audit --audit-level=high
+
+      - name: Emit non-authorizing verification manifest
+        id: manifest
+        if: always()
+        env:
+          HEAD_SHA: ${{ inputs.head_sha }}
+          CHECKOUT_OUTCOME: ${{ steps.checkout.outcome }}
+          IDENTITY_OUTCOME: ${{ steps.identity.outcome }}
+          NODE_OUTCOME: ${{ steps.node.outcome }}
+          INSTALL_OUTCOME: ${{ steps.install.outcome }}
+          LINT_OUTCOME: ${{ steps.lint.outcome }}
+          BUILD_OUTCOME: ${{ steps.build.outcome }}
+          TESTS_OUTCOME: ${{ steps.tests.outcome }}
+          FORMAT_OUTCOME: ${{ steps.format.outcome }}
+          CONTRACT_OUTCOME: ${{ steps.contract.outcome }}
+          DIFF_OUTCOME: ${{ steps.diff.outcome }}
+          AUDIT_OUTCOME: ${{ steps.audit.outcome }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p verification
+          node --input-type=module <<'NODE'
+          import { writeFileSync } from 'node:fs';
+          const outcomes = {
+            checkout: process.env.CHECKOUT_OUTCOME,
+            identity: process.env.IDENTITY_OUTCOME,
+            node: process.env.NODE_OUTCOME,
+            install: process.env.INSTALL_OUTCOME,
+            lint: process.env.LINT_OUTCOME,
+            build: process.env.BUILD_OUTCOME,
+            tests: process.env.TESTS_OUTCOME,
+            format_check: process.env.FORMAT_OUTCOME,
+            repository_contract: process.env.CONTRACT_OUTCOME,
+            diff_check: process.env.DIFF_OUTCOME,
+            dependency_audit: process.env.AUDIT_OUTCOME
+          };
+          const green = Object.values(outcomes).every(value => value === 'success');
+          writeFileSync('verification/verification-manifest.json', JSON.stringify({
+            schema_version: '1.0.0-draft.1',
+            artifact_class: 'NON_AUTHORIZING_VERIFICATION_MANIFEST',
+            authorizing: false,
+            candidate_head_sha: process.env.HEAD_SHA,
+            result: green ? 'ALL_CHECKS_PASSED' : 'HOLD',
+            outcomes
+          }, null, 2) + '\n');
+          if (!green) process.exitCode = 1;
+          NODE
+
+      - name: Upload verification manifest
+        if: always()
+        uses: actions/upload-artifact@0b7f8abb1508181956e8e162db84b466c27e18f
+        with:
+          name: candidate-verification-${{ inputs.head_sha }}
+          path: verification/verification-manifest.json
+          if-no-files-found: error
+          retention-days: 30
