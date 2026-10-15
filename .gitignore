@@ -70,3 +70,6 @@ docker-compose.override.yml
 *.key
 *.crt
 secrets/
+
+# generated artifacts
+src/generated/
