@@ -72,6 +72,11 @@ jobs:
         id: dependencies
         run: npm ci
 
+      - name: Generate Prisma client
+        id: prisma
+        shell: bash
+        run: npx prisma generate
+
       - name: Lint
         id: lint
         run: npm run lint
@@ -120,6 +125,7 @@ jobs:
           OUTCOME_IDENTITY: ${{ steps.identity.outcome }}
           OUTCOME_NODE: ${{ steps.node.outcome }}
           OUTCOME_DEPS: ${{ steps.dependencies.outcome }}
+          OUTCOME_PRISMA: ${{ steps.prisma.outcome }}
           OUTCOME_LINT: ${{ steps.lint.outcome }}
           OUTCOME_BUILD: ${{ steps.build.outcome }}
           OUTCOME_TEST: ${{ steps.test.outcome }}
@@ -144,6 +150,7 @@ jobs:
             --arg out_identity "$OUTCOME_IDENTITY" \
             --arg out_node "$OUTCOME_NODE" \
             --arg out_deps "$OUTCOME_DEPS" \
+            --arg out_prisma "$OUTCOME_PRISMA" \
             --arg out_lint "$OUTCOME_LINT" \
             --arg out_build "$OUTCOME_BUILD" \
             --arg out_test "$OUTCOME_TEST" \
@@ -173,7 +180,7 @@ jobs:
                run_attempt: $attempt,
                job_status: $job,
                result: (if $expected == $observed
-                         and ([$out_checkout,$out_identity,$out_node,$out_deps,$out_lint,
+                         and ([$out_checkout,$out_identity,$out_node,$out_deps,$out_prisma,$out_lint,
                                $out_build,$out_test,$out_format,$out_contract,$out_diff,$out_audit]
                               | all(. == "success"))
                          then "ALL_CHECKS_PASSED" else "HOLD" end),
@@ -182,6 +189,7 @@ jobs:
                  gate("identity"; $out_identity),
                  gate("node"; $out_node),
                  gate("dependencies"; $out_deps),
+                 gate("prisma"; $out_prisma),
                  gate("lint"; $out_lint),
                  gate("build"; $out_build),
                  gate("test"; $out_test),
