@@ -1,5 +1,7 @@
 # ADR-0009: Dependency Governance Boundary
 
+- **Decision owners:** TWGT maintainers
+
 ## Status
 
 Proposed

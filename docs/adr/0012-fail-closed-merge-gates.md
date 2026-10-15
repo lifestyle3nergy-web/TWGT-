@@ -1,5 +1,7 @@
 # ADR-0012: Fail-Closed Merge Gates
 
+- **Decision owners:** TWGT maintainers
+
 - **Status:** Proposed
 - **Date:** 2026-09-16
 - **Scope:** `main` admission and merge queue

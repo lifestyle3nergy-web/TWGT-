@@ -1,4 +1,6 @@
-# TWGT Bootstrap Verifier — Implementation Record
+# ADR-0011: TWGT Bootstrap Verifier — Implementation Record
+
+- **Decision owners:** TWGT maintainers
 
 **Status:** Implemented — review/validation pending merge
 **Date:** 2026-09-08
