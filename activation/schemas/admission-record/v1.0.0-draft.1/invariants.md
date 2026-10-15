@@ -122,28 +122,28 @@ Out of scope: bootstrap-envelope cryptographic verification, structural-result s
 
 ## 13. Exit code vocabulary
 
-| Exit | Name | Meaning |
-|---:|---|---|
-| 0 | `FULL_VERIFICATION_PASS` | Full verification succeeded. Authorizing only within the separately defined human-admission process. |
-| 10 | `STRUCTURE_VALID_ONLY` | Structural validation only. Non-authorizing. |
-| 20 | `EVIDENCE_MISSING` | Required evidence file absent. |
-| 21 | `EVIDENCE_INVALID` | Malformed JSON, schema violation, or wrong artifact class. |
-| 22 | `EVIDENCE_EXPIRED` | Evidence at or beyond `expires_at`. |
-| 23 | `SIGNATURE_UNVERIFIED` | Unissued envelope, invalid signature, or untrusted key. |
-| 24 | `ARTIFACT_INTEGRITY_FAILED` | Artifact digest mismatch. |
-| 25 | `POLICY_SOURCE_UNAVAILABLE` | Policy service, trust root, or artifact unreachable. |
-| 26 | `POLICY_SIGNATURE_INVALID` | Policy signature fails trust verification. |
-| 27 | `CANDIDATE_IDENTITY_MISMATCH` | Candidate tuple differs from authorization. |
-| 28 | `POLICY_VERSION_CHANGED` | Policy digest changed; re-evaluation required. |
-| 29 | `REVIEW_INDEPENDENCE_FAILED` | Approver conflicts with author or last committer. |
-| 30 | `AUTHORIZATION_EXPIRED` | Authorization at or beyond `expires_at`. |
-| 31 | `ENVIRONMENT_QUARANTINED` | Target environment is quarantined. |
-| 32 | `AUDIT_STORE_UNAVAILABLE` | Append-only audit store unavailable or inconsistent. |
-| 33 | `REQUIRED_EVIDENCE_UNAVAILABLE` | Mandatory gate missing, skipped, or unavailable. |
-| 34 | `INVALID_TRANSITION` | State transition not permitted. |
-| 35 | `REJECTED_TERMINAL` | Attempt to progress a rejected candidate. |
-| 36 | `BREAK_GLASS_INVALID` | Override lacks dual authorization or valid expiry. |
-| 70 | `VALIDATOR_INTERNAL_ERROR` | Unhandled exception. |
+| Exit | Name                            | Meaning                                                                                              |
+| ---: | ------------------------------- | ---------------------------------------------------------------------------------------------------- |
+|    0 | `FULL_VERIFICATION_PASS`        | Full verification succeeded. Authorizing only within the separately defined human-admission process. |
+|   10 | `STRUCTURE_VALID_ONLY`          | Structural validation only. Non-authorizing.                                                         |
+|   20 | `EVIDENCE_MISSING`              | Required evidence file absent.                                                                       |
+|   21 | `EVIDENCE_INVALID`              | Malformed JSON, schema violation, or wrong artifact class.                                           |
+|   22 | `EVIDENCE_EXPIRED`              | Evidence at or beyond `expires_at`.                                                                  |
+|   23 | `SIGNATURE_UNVERIFIED`          | Unissued envelope, invalid signature, or untrusted key.                                              |
+|   24 | `ARTIFACT_INTEGRITY_FAILED`     | Artifact digest mismatch.                                                                            |
+|   25 | `POLICY_SOURCE_UNAVAILABLE`     | Policy service, trust root, or artifact unreachable.                                                 |
+|   26 | `POLICY_SIGNATURE_INVALID`      | Policy signature fails trust verification.                                                           |
+|   27 | `CANDIDATE_IDENTITY_MISMATCH`   | Candidate tuple differs from authorization.                                                          |
+|   28 | `POLICY_VERSION_CHANGED`        | Policy digest changed; re-evaluation required.                                                       |
+|   29 | `REVIEW_INDEPENDENCE_FAILED`    | Approver conflicts with author or last committer.                                                    |
+|   30 | `AUTHORIZATION_EXPIRED`         | Authorization at or beyond `expires_at`.                                                             |
+|   31 | `ENVIRONMENT_QUARANTINED`       | Target environment is quarantined.                                                                   |
+|   32 | `AUDIT_STORE_UNAVAILABLE`       | Append-only audit store unavailable or inconsistent.                                                 |
+|   33 | `REQUIRED_EVIDENCE_UNAVAILABLE` | Mandatory gate missing, skipped, or unavailable.                                                     |
+|   34 | `INVALID_TRANSITION`            | State transition not permitted.                                                                      |
+|   35 | `REJECTED_TERMINAL`             | Attempt to progress a rejected candidate.                                                            |
+|   36 | `BREAK_GLASS_INVALID`           | Override lacks dual authorization or valid expiry.                                                   |
+|   70 | `VALIDATOR_INTERNAL_ERROR`      | Unhandled exception.                                                                                 |
 
 Exit codes are stable. New codes MAY be added. Existing codes MUST NOT be reassigned. A consumer branching on an exit code MUST treat an unrecognized nonzero code as `HOLD`.
 

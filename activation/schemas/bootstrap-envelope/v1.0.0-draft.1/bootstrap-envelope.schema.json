@@ -54,12 +54,7 @@
     "subject": {
       "type": "object",
       "additionalProperties": false,
-      "required": [
-        "repository",
-        "pull_request",
-        "candidate_head_sha",
-        "identity_digest"
-      ],
+      "required": ["repository", "pull_request", "candidate_head_sha", "identity_digest"],
       "properties": {
         "repository": {
           "type": "string",
@@ -108,10 +103,7 @@
     "signature": {
       "type": "object",
       "additionalProperties": false,
-      "required": [
-        "encoding",
-        "value"
-      ],
+      "required": ["encoding", "value"],
       "properties": {
         "encoding": {
           "const": "base64"

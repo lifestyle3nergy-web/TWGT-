@@ -137,13 +137,7 @@
             "minLength": 1
           },
           "result": {
-            "enum": [
-              "PASS",
-              "FAIL",
-              "SKIPPED",
-              "UNAVAILABLE",
-              "EXPIRED"
-            ]
+            "enum": ["PASS", "FAIL", "SKIPPED", "UNAVAILABLE", "EXPIRED"]
           },
           "source_uri": {
             "type": "string",
@@ -193,26 +187,17 @@
           "minLength": 1
         },
         "approver_id": {
-          "type": [
-            "string",
-            "null"
-          ]
+          "type": ["string", "null"]
         },
         "decided_at": {
           "type": "string",
           "format": "date-time"
         },
         "rationale": {
-          "type": [
-            "string",
-            "null"
-          ]
+          "type": ["string", "null"]
         },
         "review_state": {
-          "enum": [
-            "PENDING",
-            "RECORDED"
-          ]
+          "enum": ["PENDING", "RECORDED"]
         }
       },
       "allOf": [
@@ -223,9 +208,7 @@
                 "const": "RECORDED"
               }
             },
-            "required": [
-              "review_state"
-            ]
+            "required": ["review_state"]
           },
           "then": {
             "properties": {
@@ -256,17 +239,10 @@
       ],
       "properties": {
         "stage": {
-          "enum": [
-            "staging",
-            "production"
-          ]
+          "enum": ["staging", "production"]
         },
         "authorization_state": {
-          "enum": [
-            "ACTIVE",
-            "EXPIRED",
-            "REVOKED"
-          ]
+          "enum": ["ACTIVE", "EXPIRED", "REVOKED"]
         },
         "issued_at": {
           "type": "string",
@@ -290,23 +266,14 @@
     "environment": {
       "type": "object",
       "additionalProperties": false,
-      "required": [
-        "environment_id",
-        "state",
-        "parity_report_digest",
-        "declared_deviations"
-      ],
+      "required": ["environment_id", "state", "parity_report_digest", "declared_deviations"],
       "properties": {
         "environment_id": {
           "type": "string",
           "minLength": 1
         },
         "state": {
-          "enum": [
-            "HEALTHY",
-            "QUARANTINED",
-            "RECOVERY_PENDING"
-          ]
+          "enum": ["HEALTHY", "QUARANTINED", "RECOVERY_PENDING"]
         },
         "parity_report_digest": {
           "anyOf": [
@@ -329,10 +296,7 @@
     "decision": {
       "type": "object",
       "additionalProperties": false,
-      "required": [
-        "state",
-        "reason_codes"
-      ],
+      "required": ["state", "reason_codes"],
       "properties": {
         "state": {
           "enum": [
@@ -358,11 +322,7 @@
     "audit": {
       "type": "object",
       "additionalProperties": false,
-      "required": [
-        "record_uri",
-        "record_digest",
-        "sequence"
-      ],
+      "required": ["record_uri", "record_digest", "sequence"],
       "properties": {
         "record_uri": {
           "type": "string",
@@ -435,13 +395,7 @@
     "supplyChain": {
       "type": "object",
       "additionalProperties": false,
-      "required": [
-        "build_type",
-        "builder_id",
-        "materials",
-        "invocation_digest",
-        "byproducts"
-      ],
+      "required": ["build_type", "builder_id", "materials", "invocation_digest", "byproducts"],
       "properties": {
         "build_type": {
           "type": "string",
@@ -457,10 +411,7 @@
           "items": {
             "type": "object",
             "additionalProperties": false,
-            "required": [
-              "uri",
-              "digest"
-            ],
+            "required": ["uri", "digest"],
             "properties": {
               "uri": {
                 "type": "string",

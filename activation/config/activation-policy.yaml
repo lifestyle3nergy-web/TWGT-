@@ -1,10 +1,10 @@
 # TWGT activation policy
-version: "1"
+version: '1'
 
 policy:
-  id: "twgt-activation-policy"
-  mode: "verification-gated"
-  defaultTransition: "deny"
+  id: 'twgt-activation-policy'
+  mode: 'verification-gated'
+  defaultTransition: 'deny'
 
 activation:
   required:
@@ -36,8 +36,8 @@ transitions:
       - verified
 
 failurePolicy:
-  invalidEvidence: "deny"
-  invalidSignature: "deny"
-  missingContract: "deny"
-  missingRollbackPin: "deny"
-  catalogDrift: "deny"
+  invalidEvidence: 'deny'
+  invalidSignature: 'deny'
+  missingContract: 'deny'
+  missingRollbackPin: 'deny'
+  catalogDrift: 'deny'

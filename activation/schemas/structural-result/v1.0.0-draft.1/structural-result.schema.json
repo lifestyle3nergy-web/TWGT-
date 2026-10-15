@@ -3,13 +3,7 @@
   "title": "TWGT Structural Validation Result",
   "type": "object",
   "additionalProperties": false,
-  "required": [
-    "schema_version",
-    "candidate_head_sha",
-    "result",
-    "authorizing",
-    "checks"
-  ],
+  "required": ["schema_version", "candidate_head_sha", "result", "authorizing", "checks"],
   "properties": {
     "schema_version": {
       "const": "1.0.0-draft.1"
@@ -29,23 +23,14 @@
       "items": {
         "type": "object",
         "additionalProperties": false,
-        "required": [
-          "check_id",
-          "result",
-          "reason_code"
-        ],
+        "required": ["check_id", "result", "reason_code"],
         "properties": {
           "check_id": {
             "type": "string",
             "minLength": 1
           },
           "result": {
-            "enum": [
-              "PASS",
-              "FAIL",
-              "SKIPPED",
-              "UNAVAILABLE"
-            ]
+            "enum": ["PASS", "FAIL", "SKIPPED", "UNAVAILABLE"]
           },
           "reason_code": {
             "type": "string",
