@@ -1,0 +1,67 @@
+"$schema": "https://json-schema.org/draft/2020-12/schema"
+title: TWGT Outcome Package
+type: object
+required:
+  - id
+  - demand
+  - outcome
+  - evidence
+  - capability_map
+  - decision
+properties:
+  id:
+    type: string
+    pattern: "^[a-z0-9][a-z0-9-]{2,80}$"
+  demand:
+    type: object
+    required: [statement, environment]
+    properties:
+      statement: {type: string, minLength: 10}
+      environment: {type: string, minLength: 2}
+      constraints:
+        type: array
+        items: {type: string}
+  outcome:
+    type: object
+    required: [statement, measure, acceptance]
+    properties:
+      statement: {type: string, minLength: 10}
+      measure: {type: string, minLength: 2}
+      baseline: {type: string}
+      target: {type: string}
+      acceptance: {type: string, minLength: 10}
+  capability_map:
+    type: array
+    items:
+      type: object
+      required: [name, type, source, purpose, status]
+      properties:
+        name: {type: string}
+        type:
+          enum: [static-tool, static-library, static-skill, runtime-service, data-asset]
+        source: {type: string}
+        purpose: {type: string}
+        status:
+          enum: [candidate, assessed, admitted, rejected]
+        evidence: {type: array, items: {type: string}}
+  evidence:
+    type: array
+    minItems: 1
+    items:
+      type: object
+      required: [id, type, location]
+      properties:
+        id: {type: string}
+        type: {enum: [test, benchmark, observation, document, metric, review]}
+        location: {type: string}
+        result: {type: string}
+  decision:
+    type: object
+    required: [state, authorised_by]
+    properties:
+      state:
+        enum: [BLOCK, REVIEW, READY, ACTION, OPPORTUNITY]
+      authorised_by: {type: string}
+      rationale: {type: string}
+      next_action: {type: string}
+additionalProperties: false
