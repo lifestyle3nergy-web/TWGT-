@@ -1,4 +1,4 @@
-# ADR-0002: Dependency Governance Boundary
+# ADR-0009: Dependency Governance Boundary
 
 ## Status
 

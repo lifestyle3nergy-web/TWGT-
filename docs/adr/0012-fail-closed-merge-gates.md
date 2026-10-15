@@ -1,4 +1,4 @@
-# ADR-0007: Fail-Closed Merge Gates
+# ADR-0012: Fail-Closed Merge Gates
 
 - **Status:** Proposed
 - **Date:** 2026-09-16

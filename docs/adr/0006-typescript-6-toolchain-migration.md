@@ -50,7 +50,7 @@ toolchain explicitly supports it and a separate compatibility review succeeds.
 
 ### Operational
 
-Although the package change is dependency-only under ADR-0002, this ADR records
+Although the package change is dependency-only under ADR-0009, this ADR records
 the explicit compiler-major decision. It does not change workflows or runtime
 activation policy.
 
