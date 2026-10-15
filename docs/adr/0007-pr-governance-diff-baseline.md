@@ -1,5 +1,7 @@
 # ADR-0007: Pull-request governance diff baseline
 
+- **Decision owners:** TWGT maintainers
+
 - **Status:** Proposed
 - **Date:** 2026-09-15
 - **Scope:** Repository contract validation in pull-request workflows

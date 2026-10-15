@@ -1,5 +1,7 @@
 # ADR-0008: Prisma 7 PostgreSQL Client Migration
 
+- **Decision owners:** TWGT maintainers
+
 - Status: Proposed
 - Date: 2026-09-16
 

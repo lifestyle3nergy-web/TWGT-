@@ -1,4 +1,6 @@
-# ADR-0002: Dependency Governance Boundary
+# ADR-0009: Dependency Governance Boundary
+
+- **Decision owners:** TWGT maintainers
 
 ## Status
 

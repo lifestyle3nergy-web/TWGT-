@@ -1,4 +1,4 @@
-# ADR-0002: Fail-Closed Bootstrap Verification Boundary
+# ADR-0010: Fail-Closed Bootstrap Verification Boundary
 
 - **Status:** Proposed
 - **Date:** 2026-09-08
