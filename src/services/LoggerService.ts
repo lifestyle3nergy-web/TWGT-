@@ -14,40 +14,52 @@ export class LoggerService {
     this.serviceName = serviceName;
   }
 
-  /**
-   * Log debug information.
-   */
   public debug(message: string): void {
     this.write(LogLevel.DEBUG, message);
   }
 
-  /**
-   * Log informational messages.
-   */
   public info(message: string): void {
     this.write(LogLevel.INFO, message);
   }
 
-  /**
-   * Log warnings.
-   */
   public warn(message: string): void {
     this.write(LogLevel.WARN, message);
   }
 
-  /**
-   * Log errors.
-   */
   public error(message: string, error?: unknown): void {
-    this.write(LogLevel.ERROR, error ? `${message} ${String(error)}` : message);
+    const details = LoggerService.describeError(error);
+
+    this.write(
+      LogLevel.ERROR,
+      details ? `${message} ${details}` : message,
+    );
   }
 
-  /**
-   * Internal log formatter.
-   */
+  private static describeError(error: unknown): string | undefined {
+    if (error === undefined || error === null) {
+      return undefined;
+    }
+
+    if (error instanceof Error) {
+      return error.stack ?? `${error.name}: ${error.message}`;
+    }
+
+    return String(error);
+  }
+
   private write(level: LogLevel, message: string): void {
     const timestamp = currentTimestamp();
+    const line = `[${timestamp}] [${level}] [${this.serviceName}] ${message}`;
 
-    console.log(`[${timestamp}] [${level}] [${this.serviceName}] ${message}`);
+    switch (level) {
+      case LogLevel.ERROR:
+        console.error(line);
+        break;
+      case LogLevel.WARN:
+        console.warn(line);
+        break;
+      default:
+        console.log(line);
+    }
   }
 }
