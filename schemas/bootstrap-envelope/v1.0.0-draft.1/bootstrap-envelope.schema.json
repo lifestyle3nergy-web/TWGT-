@@ -1,0 +1,137 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "TWGT Bootstrap Evidence Envelope",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "envelope_version",
+    "issuer",
+    "evidence_id",
+    "issued_at",
+    "expires_at",
+    "signing_algorithm",
+    "signing_key_id",
+    "trust_root_id",
+    "subject",
+    "artifacts",
+    "signature"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "1.0.0-draft.1"
+    },
+    "envelope_version": {
+      "const": "twgt-bootstrap-envelope-v1"
+    },
+    "issuer": {
+      "type": "string",
+      "minLength": 1
+    },
+    "evidence_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "issued_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "expires_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "signing_algorithm": {
+      "const": "Ed25519"
+    },
+    "signing_key_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "trust_root_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "subject": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "repository",
+        "pull_request",
+        "candidate_head_sha",
+        "identity_digest"
+      ],
+      "properties": {
+        "repository": {
+          "type": "string",
+          "pattern": "^[^/]+/[^/]+$"
+        },
+        "pull_request": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "candidate_head_sha": {
+          "$ref": "#/$defs/gitSha"
+        },
+        "identity_digest": {
+          "$ref": "#/$defs/sha256"
+        }
+      }
+    },
+    "artifacts": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "source_tree_digest",
+        "lockfile_digest",
+        "artifact_digest",
+        "deploy_config_digest",
+        "contract_digest"
+      ],
+      "properties": {
+        "source_tree_digest": {
+          "$ref": "#/$defs/sha256"
+        },
+        "lockfile_digest": {
+          "$ref": "#/$defs/sha256"
+        },
+        "artifact_digest": {
+          "$ref": "#/$defs/sha256"
+        },
+        "deploy_config_digest": {
+          "$ref": "#/$defs/sha256"
+        },
+        "contract_digest": {
+          "$ref": "#/$defs/sha256"
+        }
+      }
+    },
+    "signature": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "encoding",
+        "value"
+      ],
+      "properties": {
+        "encoding": {
+          "const": "base64"
+        },
+        "value": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9+/]+={0,2}$",
+          "minLength": 1
+        }
+      }
+    }
+  },
+  "$defs": {
+    "gitSha": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{40}$"
+    },
+    "sha256": {
+      "type": "string",
+      "pattern": "^sha256:[a-f0-9]{64}$"
+    }
+  }
+}
