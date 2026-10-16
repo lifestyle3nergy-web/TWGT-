@@ -1,0 +1,34 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "twgt://activation/schemas/admission-record.schema.json",
+  "title": "TWGT Human Admission Record",
+  "type": "object",
+  "required": [
+    "schemaVersion",
+    "admissionId",
+    "candidateSha",
+    "baseSha",
+    "contractLockSha256",
+    "evidenceRecordSha256",
+    "schemaGateCommit",
+    "decision",
+    "operator",
+    "decidedAt",
+    "notes"
+  ],
+  "properties": {
+    "schemaVersion":        { "type": "string", "minLength": 1 },
+    "admissionId":          { "type": "string", "pattern": "^ADM-[0-9]{8}-[0-9a-f]{8}$" },
+    "candidateSha":         { "type": "string", "pattern": "^[0-9a-f]{40}$" },
+    "baseSha":              { "type": "string", "pattern": "^[0-9a-f]{40}$" },
+    "contractLockSha256":   { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+    "evidenceRecordSha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+    "schemaGateCommit":     { "type": "string", "pattern": "^[0-9a-f]{40}$" },
+    "decision":             { "enum": ["ADMIT", "HOLD", "REJECT"] },
+    "operator":             { "type": "string", "minLength": 1 },
+    "decidedAt":            { "type": "string", "format": "date-time" },
+    "notes":                { "type": "string", "minLength": 1 },
+    "rollbackPlan":         { "type": "string" }
+  },
+  "additionalProperties": false
+}

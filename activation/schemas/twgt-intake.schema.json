@@ -1,0 +1,34 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "twgt://activation/schemas/twgt-intake.schema.json",
+  "title": "TWGT Baseline-Provenance Intake",
+  "type": "object",
+  "required": [
+    "schemaVersion",
+    "intakeId",
+    "receivedAt",
+    "sourceRepo",
+    "bridgeVersion",
+    "evidenceState",
+    "evidenceReason",
+    "contractLockSha256",
+    "schemaGateCommit",
+    "gateVerdict"
+  ],
+  "properties": {
+    "schemaVersion":        { "type": "string", "minLength": 1 },
+    "intakeId":             { "type": "string", "minLength": 1 },
+    "receivedAt":           { "type": "string", "format": "date-time" },
+    "sourceRepo":           { "type": "string", "pattern": "^[^/]+/[^/]+$" },
+    "bridgeVersion":        { "type": "string", "minLength": 1 },
+    "evidenceState":        { "enum": ["EVIDENCE_READY", "HELD"] },
+    "evidenceReason":       { "type": "string", "minLength": 1 },
+    "contractLockSha256":   { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+    "schemaGateCommit":     { "type": "string", "pattern": "^[0-9a-f]{40}$" },
+    "gateVerdict":          { "enum": ["PASS", "FAIL", "UNKNOWN"] },
+    "candidateSha":         { "type": "string", "pattern": "^[0-9a-f]{40}$" },
+    "baseSha":              { "type": "string", "pattern": "^[0-9a-f]{40}$" },
+    "evidenceRecordSha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" }
+  },
+  "additionalProperties": false
+}
