@@ -32,6 +32,11 @@ jobs:
       - name: npm-ci
         run: npm ci
 
+      - name: prisma-generate
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/twgt_ci
+        run: npx prisma generate
+
       - name: lint
         run: npm run lint
 
