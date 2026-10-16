@@ -12,7 +12,6 @@ The repository contract (`scripts/validate-repository-contract.mjs` on
 main) rejects any top-level entry not on an approved list. The
 bootstrap verifier adds six:
 
-
 It also places `activation/lib/bootstrap-verifier.mjs`, which the
 contract classifies as an activation-boundary violation.
 
