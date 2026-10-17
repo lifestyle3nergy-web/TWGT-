@@ -1,3 +1,4 @@
+/* global fetch, Buffer */
 import { execFileSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
 import { readFileSync } from 'node:fs';
