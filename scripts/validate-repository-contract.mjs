@@ -1,4 +1,5 @@
 import { execFileSync } from 'node:child_process';
+import { createHash } from 'node:crypto';
 import { readFileSync } from 'node:fs';
 
 const run = (args) => execFileSync('git', args, { encoding: 'utf8' }).trim();
@@ -70,7 +71,7 @@ if (baseRef) {
 // PR #57 explicitly introduces these boundary surfaces and backs them with
 // ADR-0001. They are approved additions to the frozen main baseline, not
 // silently converted into the baseline itself.
-const approvedTopLevelAdditions = new Set(['REPO-CONTRACT.md', 'activation', 'prisma.config.ts']);
+const approvedTopLevelAdditions = new Set(['REPO-CONTRACT.md', 'activation', 'prisma.config.ts', '.twgt']);
 
 const topLevel = new Set(files.map((file) => file.split('/')[0]).filter(Boolean));
 for (const entry of topLevel) {
@@ -152,6 +153,88 @@ for (const file of files.filter((file) => file.startsWith(`${activationRoot}/`))
   const firstSegment = relative.split('/')[0];
   if (!activationAllowed.has(firstSegment)) {
     errors.push(`Activation boundary violation: ${file}`);
+  }
+}
+
+// --- ADR registry check -----------------------------------------------------
+// Fetches the central ADR registry from engineering-intelligence at the SHA
+// pinned in .twgt/adr-registry-pin.json, verifies its hash, and checks that
+// every docs/adr/NNNN-*.md file in the PR diff matches a registry entry
+// whose repo is TWGT-. Fail-closed: any error pushes to errors[].
+//
+// Logic mirrors twgt-bridge/bin/verify-adr-registry.mjs. If the verifier is
+// updated, apply the same fix here, or refactor to import when twgt-bridge
+// publishes as an npm package.
+if (baseRef && changed.length > 0) {
+  try {
+    const pinPath = '.twgt/adr-registry-pin.json';
+    let pin = null;
+    try {
+      pin = JSON.parse(readFileSync(pinPath, 'utf8'));
+    } catch (e) {
+      errors.push(`ADR registry pin missing or malformed: ${pinPath} (${String(e.message || e)})`);
+    }
+    if (pin) {
+      if (!pin.repo || !pin.path || !pin.bridge_sha || !pin.registry_sha256) {
+        errors.push(`ADR registry pin incomplete: ${pinPath} must contain repo, path, bridge_sha, registry_sha256`);
+      } else {
+        const url = `https://raw.githubusercontent.com/${pin.repo}/${pin.bridge_sha}/${pin.path}`;
+        let registryBytes = null;
+        try {
+          const res = await fetch(url);
+          if (!res.ok) {
+            errors.push(`ADR registry fetch failed: ${res.status} ${res.statusText} (${url})`);
+          } else {
+            registryBytes = Buffer.from(await res.arrayBuffer());
+          }
+        } catch (e) {
+          errors.push(`ADR registry fetch error: ${String(e.message || e)} (${url})`);
+        }
+        if (registryBytes) {
+          const actualHash = createHash('sha256').update(registryBytes).digest('hex');
+          if (actualHash !== pin.registry_sha256) {
+            errors.push(`ADR registry hash mismatch: expected ${pin.registry_sha256}, got ${actualHash}`);
+          } else {
+            let registry = null;
+            try {
+              registry = JSON.parse(registryBytes.toString('utf8'));
+            } catch (e) {
+              errors.push(`ADR registry JSON parse failed: ${String(e.message || e)}`);
+            }
+            if (registry && Array.isArray(registry.allocated)) {
+              const changedAdrs = changed.filter((p) => /^docs\/adr\/\d{4}-.+\.md$/.test(p));
+              for (const adrPath of changedAdrs) {
+                const m = adrPath.match(/^docs\/adr\/(\d{4})-(.+)\.md$/);
+                if (!m) continue;
+                const number = m[1];
+                const slug = m[2];
+                const matches = registry.allocated.filter((e) => e.number === number);
+                if (matches.length === 0) {
+                  errors.push(`ADR ${adrPath}: number ${number} not in registry`);
+                  continue;
+                }
+                if (matches.length > 1) {
+                  errors.push(`ADR ${adrPath}: registry has ${matches.length} entries for number ${number}`);
+                  continue;
+                }
+                const entry = matches[0];
+                if (entry.repo !== 'lifestyle3nergy-web/TWGT-') {
+                  errors.push(`ADR ${adrPath}: registry assigns ${number} to ${entry.repo}, not TWGT-`);
+                  continue;
+                }
+                if (entry.slug !== slug) {
+                  errors.push(`ADR ${adrPath}: registry slug for ${number} is "${entry.slug}", file has "${slug}"`);
+                }
+              }
+            } else if (registry) {
+              errors.push('ADR registry missing allocated array');
+            }
+          }
+        }
+      }
+    }
+  } catch (e) {
+    errors.push(`ADR registry check error: ${String(e.message || e)}`);
   }
 }
 
