@@ -1,0 +1,438 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "TWGT Admission Record",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "decision_id",
+    "candidate",
+    "policy",
+    "evidence",
+    "review",
+    "authorization",
+    "environment",
+    "decision",
+    "audit",
+    "break_glass"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "1.0.0-draft.1"
+    },
+    "decision_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "candidate": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "repository",
+        "pull_request",
+        "base_sha",
+        "head_sha",
+        "lockfile_digest",
+        "artifact_digest",
+        "deploy_config_digest",
+        "contract_version",
+        "contract_digest",
+        "identity_digest",
+        "identity_digest_spec",
+        "supply_chain"
+      ],
+      "properties": {
+        "repository": {
+          "type": "string",
+          "pattern": "^[^/]+/[^/]+$"
+        },
+        "pull_request": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "base_sha": {
+          "$ref": "#/$defs/gitSha"
+        },
+        "head_sha": {
+          "$ref": "#/$defs/gitSha"
+        },
+        "lockfile_digest": {
+          "$ref": "#/$defs/sha256"
+        },
+        "artifact_digest": {
+          "$ref": "#/$defs/sha256"
+        },
+        "deploy_config_digest": {
+          "$ref": "#/$defs/sha256"
+        },
+        "contract_version": {
+          "type": "string",
+          "minLength": 1
+        },
+        "contract_digest": {
+          "$ref": "#/$defs/sha256"
+        },
+        "identity_digest": {
+          "$ref": "#/$defs/sha256"
+        },
+        "identity_digest_spec": {
+          "const": "twgt-candidate-identity-v1"
+        },
+        "supply_chain": {
+          "$ref": "#/$defs/supplyChain"
+        }
+      }
+    },
+    "policy": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "artifact_uri",
+        "artifact_digest",
+        "trust_root_id",
+        "signing_key_id",
+        "signature_artifact_digest"
+      ],
+      "properties": {
+        "artifact_uri": {
+          "type": "string",
+          "minLength": 1
+        },
+        "artifact_digest": {
+          "$ref": "#/$defs/sha256"
+        },
+        "trust_root_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "signing_key_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "signature_artifact_digest": {
+          "$ref": "#/$defs/sha256"
+        }
+      }
+    },
+    "evidence": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "gate_id",
+          "result",
+          "source_uri",
+          "source_digest",
+          "observed_at",
+          "expires_at",
+          "candidate_head_sha",
+          "policy_digest",
+          "supply_chain"
+        ],
+        "properties": {
+          "gate_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "result": {
+            "enum": ["PASS", "FAIL", "SKIPPED", "UNAVAILABLE", "EXPIRED"]
+          },
+          "source_uri": {
+            "type": "string",
+            "minLength": 1
+          },
+          "source_digest": {
+            "$ref": "#/$defs/sha256"
+          },
+          "observed_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "expires_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "candidate_head_sha": {
+            "$ref": "#/$defs/gitSha"
+          },
+          "policy_digest": {
+            "$ref": "#/$defs/sha256"
+          },
+          "supply_chain": {
+            "$ref": "#/$defs/supplyChain"
+          }
+        }
+      }
+    },
+    "review": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "author_id",
+        "last_committer_id",
+        "approver_id",
+        "decided_at",
+        "rationale",
+        "review_state"
+      ],
+      "properties": {
+        "author_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "last_committer_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "approver_id": {
+          "type": ["string", "null"]
+        },
+        "decided_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "rationale": {
+          "type": ["string", "null"]
+        },
+        "review_state": {
+          "enum": ["PENDING", "RECORDED"]
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "review_state": {
+                "const": "RECORDED"
+              }
+            },
+            "required": ["review_state"]
+          },
+          "then": {
+            "properties": {
+              "approver_id": {
+                "type": "string",
+                "minLength": 1
+              },
+              "rationale": {
+                "type": "string",
+                "minLength": 1
+              }
+            }
+          }
+        }
+      ]
+    },
+    "authorization": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "stage",
+        "authorization_state",
+        "issued_at",
+        "expires_at",
+        "candidate_identity_digest",
+        "policy_digest",
+        "deploy_config_digest"
+      ],
+      "properties": {
+        "stage": {
+          "enum": ["staging", "production"]
+        },
+        "authorization_state": {
+          "enum": ["ACTIVE", "EXPIRED", "REVOKED"]
+        },
+        "issued_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "expires_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "candidate_identity_digest": {
+          "$ref": "#/$defs/sha256"
+        },
+        "policy_digest": {
+          "$ref": "#/$defs/sha256"
+        },
+        "deploy_config_digest": {
+          "$ref": "#/$defs/sha256"
+        }
+      }
+    },
+    "environment": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["environment_id", "state", "parity_report_digest", "declared_deviations"],
+      "properties": {
+        "environment_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "state": {
+          "enum": ["HEALTHY", "QUARANTINED", "RECOVERY_PENDING"]
+        },
+        "parity_report_digest": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/sha256"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "declared_deviations": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "decision": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["state", "reason_codes"],
+      "properties": {
+        "state": {
+          "enum": [
+            "HOLD",
+            "ELIGIBLE_FOR_HUMAN_ADMISSION",
+            "ADMITTED_TO_STAGING",
+            "STAGING_VALIDATED",
+            "ELIGIBLE_FOR_RELEASE_ADMISSION",
+            "RELEASE_ADMITTED",
+            "REJECTED"
+          ]
+        },
+        "reason_codes": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        }
+      }
+    },
+    "audit": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["record_uri", "record_digest", "sequence"],
+      "properties": {
+        "record_uri": {
+          "type": "string",
+          "minLength": 1
+        },
+        "record_digest": {
+          "$ref": "#/$defs/sha256"
+        },
+        "sequence": {
+          "type": "integer",
+          "minimum": 1
+        }
+      }
+    },
+    "break_glass": {
+      "anyOf": [
+        {
+          "type": "null"
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "approver_a_id",
+            "approver_b_id",
+            "scope",
+            "issued_at",
+            "expires_at",
+            "post_incident_review_ref"
+          ],
+          "properties": {
+            "approver_a_id": {
+              "type": "string",
+              "minLength": 1
+            },
+            "approver_b_id": {
+              "type": "string",
+              "minLength": 1
+            },
+            "scope": {
+              "type": "string",
+              "minLength": 1
+            },
+            "issued_at": {
+              "type": "string",
+              "format": "date-time"
+            },
+            "expires_at": {
+              "type": "string",
+              "format": "date-time"
+            },
+            "post_incident_review_ref": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        }
+      ]
+    }
+  },
+  "$defs": {
+    "gitSha": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{40}$"
+    },
+    "sha256": {
+      "type": "string",
+      "pattern": "^sha256:[a-f0-9]{64}$"
+    },
+    "supplyChain": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["build_type", "builder_id", "materials", "invocation_digest", "byproducts"],
+      "properties": {
+        "build_type": {
+          "type": "string",
+          "minLength": 1
+        },
+        "builder_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "materials": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["uri", "digest"],
+            "properties": {
+              "uri": {
+                "type": "string",
+                "minLength": 1
+              },
+              "digest": {
+                "$ref": "#/$defs/sha256"
+              }
+            }
+          }
+        },
+        "invocation_digest": {
+          "$ref": "#/$defs/sha256"
+        },
+        "byproducts": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    }
+  }
+}

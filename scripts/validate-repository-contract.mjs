@@ -77,6 +77,13 @@ const approvedTopLevelAdditions = new Set([
   'activation',
   'prisma.config.ts',
   '.twgt',
+  'schemas',
+  'bootstrap.sh',
+  'catalog',
+  'keys',
+  'rollback_pin.txt',
+  'schema.sql',
+  'writebook.sh',
 ]);
 
 const topLevel = new Set(files.map((file) => file.split('/')[0]).filter(Boolean));
@@ -152,6 +159,7 @@ const activationAllowed = new Set([
   'state',
   'evidence',
   'README.md',
+  'lib',
 ]);
 
 for (const file of files.filter((file) => file.startsWith(`${activationRoot}/`))) {

@@ -1,0 +1,211 @@
+# Candidate-bound verification for lifestyle3nergy-web/TWGT-
+#
+# Trigger: pull_request against main.
+# Identity: every run asserts checkout HEAD == the PR head SHA.
+# Output: non-authorizing evidence manifest. Never an admission decision.
+#
+# Forbidden: do NOT change "on" to pull_request_target.
+# Forbidden: do NOT add continue-on-error to mandatory gates.
+
+name: Candidate Verify
+
+on:
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize, reopened]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: candidate-verify-${{ github.event.pull_request.head.sha }}
+  cancel-in-progress: false
+
+jobs:
+  verify:
+    name: Verify candidate head
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout candidate head
+        id: checkout
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Assert checkout SHA equals PR head SHA
+        id: identity
+        shell: bash
+        env:
+          EXPECTED_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          set -euo pipefail
+          actual="$(git rev-parse HEAD)"
+          echo "expected=$EXPECTED_SHA"
+          echo "actual=$actual"
+          if [ "$actual" != "$EXPECTED_SHA" ]; then
+            echo "::error::Checkout SHA $actual does not match PR head SHA $EXPECTED_SHA"
+            exit 27
+          fi
+          echo "head_sha=$actual" >> "$GITHUB_OUTPUT"
+
+      - name: Setup Node
+        id: node
+        uses: actions/setup-node@1d0ff469b7ec7b3cb9d8673fde0c81c44821de2a # v4.0.2
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+
+      - name: Record toolchain
+        id: toolchain
+        shell: bash
+        run: |
+          set -euo pipefail
+          node --version
+          npm --version
+          git rev-parse HEAD
+
+      - name: Install dependencies
+        id: dependencies
+        run: npm ci
+
+      - name: Generate Prisma client
+        id: prisma
+        shell: bash
+        run: npx prisma generate
+
+      - name: Lint
+        id: lint
+        run: npm run lint
+
+      - name: Build
+        id: build
+        run: npm run build
+
+      - name: Test
+        id: test
+        run: npm test
+
+      - name: Format check
+        id: format
+        run: npm run format:check
+
+      - name: Repository contract validation
+        id: contract
+        run: node scripts/validate-repository-contract.mjs
+
+      - name: Whitespace and diff check
+        id: diff_check
+        shell: bash
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          EXPECTED_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          set -euo pipefail
+          git diff --check "$BASE_SHA" "$EXPECTED_SHA"
+
+      - name: Dependency audit
+        id: audit
+        run: npm audit --audit-level=high
+
+      - name: Emit non-authorizing evidence manifest
+        if: always()
+        shell: bash
+        env:
+          EXPECTED_SHA: ${{ github.event.pull_request.head.sha }}
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          RUN_ID: ${{ github.run_id }}
+          RUN_ATTEMPT: ${{ github.run_attempt }}
+          JOB_STATUS: ${{ job.status }}
+          OUTCOME_CHECKOUT: ${{ steps.checkout.outcome }}
+          OUTCOME_IDENTITY: ${{ steps.identity.outcome }}
+          OUTCOME_NODE: ${{ steps.node.outcome }}
+          OUTCOME_DEPS: ${{ steps.dependencies.outcome }}
+          OUTCOME_PRISMA: ${{ steps.prisma.outcome }}
+          OUTCOME_LINT: ${{ steps.lint.outcome }}
+          OUTCOME_BUILD: ${{ steps.build.outcome }}
+          OUTCOME_TEST: ${{ steps.test.outcome }}
+          OUTCOME_FORMAT: ${{ steps.format.outcome }}
+          OUTCOME_CONTRACT: ${{ steps.contract.outcome }}
+          OUTCOME_DIFF: ${{ steps.diff_check.outcome }}
+          OUTCOME_AUDIT: ${{ steps.audit.outcome }}
+        run: |
+          set -euo pipefail
+          mkdir -p activation/evidence
+          actual="$(git rev-parse HEAD 2>/dev/null || true)"
+          jq -n \
+            --arg schema_version "1.0.0-draft.1" \
+            --arg expected "$EXPECTED_SHA" \
+            --arg observed "$actual" \
+            --arg base "$BASE_SHA" \
+            --argjson pr "$PR_NUMBER" \
+            --arg run "$RUN_ID" \
+            --arg attempt "$RUN_ATTEMPT" \
+            --arg job "$JOB_STATUS" \
+            --arg out_checkout "$OUTCOME_CHECKOUT" \
+            --arg out_identity "$OUTCOME_IDENTITY" \
+            --arg out_node "$OUTCOME_NODE" \
+            --arg out_deps "$OUTCOME_DEPS" \
+            --arg out_prisma "$OUTCOME_PRISMA" \
+            --arg out_lint "$OUTCOME_LINT" \
+            --arg out_build "$OUTCOME_BUILD" \
+            --arg out_test "$OUTCOME_TEST" \
+            --arg out_format "$OUTCOME_FORMAT" \
+            --arg out_contract "$OUTCOME_CONTRACT" \
+            --arg out_diff "$OUTCOME_DIFF" \
+            --arg out_audit "$OUTCOME_AUDIT" \
+            'def normalize:
+               if . == "success" then "PASS"
+               elif . == "failure" then "FAIL"
+               elif . == "skipped" then "SKIPPED"
+               else "UNAVAILABLE" end;
+             def gate($id; $outcome):
+               ($outcome | normalize) as $result |
+               {gate_id: $id, result: $result,
+                reason_code: (if $result == "PASS" then "GATE_PASS"
+                              else ($id | ascii_upcase | gsub("-"; "_")) + "_" + $result end)};
+             {
+               schema_version: $schema_version,
+               artifact_class: "CANDIDATE_VERIFICATION_MANIFEST",
+               authorizing: false,
+               candidate_head_sha: $expected,
+               observed_checkout_sha: (if $observed == "" then null else $observed end),
+               base_sha: $base,
+               pull_request: $pr,
+               run_id: $run,
+               run_attempt: $attempt,
+               job_status: $job,
+               result: (if $expected == $observed
+                         and ([$out_checkout,$out_identity,$out_node,$out_deps,$out_prisma,$out_lint,
+                               $out_build,$out_test,$out_format,$out_contract,$out_diff,$out_audit]
+                              | all(. == "success"))
+                         then "ALL_CHECKS_PASSED" else "HOLD" end),
+               gates: [
+                 gate("checkout"; $out_checkout),
+                 gate("identity"; $out_identity),
+                 gate("node"; $out_node),
+                 gate("dependencies"; $out_deps),
+                 gate("prisma"; $out_prisma),
+                 gate("lint"; $out_lint),
+                 gate("build"; $out_build),
+                 gate("test"; $out_test),
+                 gate("format"; $out_format),
+                 gate("contract"; $out_contract),
+                 gate("diff-check"; $out_diff),
+                 gate("audit"; $out_audit)
+               ]
+             }' > "activation/evidence/candidate-verify-$EXPECTED_SHA.json"
+          jq . "activation/evidence/candidate-verify-$EXPECTED_SHA.json"
+
+      - name: Upload evidence manifest
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: candidate-evidence-${{ github.event.pull_request.head.sha }}
+          path: activation/evidence/candidate-verify-${{ github.event.pull_request.head.sha }}.json
+          retention-days: 90
+          if-no-files-found: error
