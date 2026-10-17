@@ -72,7 +72,12 @@ if (baseRef) {
 // PR #57 explicitly introduces these boundary surfaces and backs them with
 // ADR-0001. They are approved additions to the frozen main baseline, not
 // silently converted into the baseline itself.
-const approvedTopLevelAdditions = new Set(['REPO-CONTRACT.md', 'activation', 'prisma.config.ts', '.twgt']);
+const approvedTopLevelAdditions = new Set([
+  'REPO-CONTRACT.md',
+  'activation',
+  'prisma.config.ts',
+  '.twgt',
+]);
 
 const topLevel = new Set(files.map((file) => file.split('/')[0]).filter(Boolean));
 for (const entry of topLevel) {
@@ -177,7 +182,9 @@ if (baseRef && changed.length > 0) {
     }
     if (pin) {
       if (!pin.repo || !pin.path || !pin.bridge_sha || !pin.registry_sha256) {
-        errors.push(`ADR registry pin incomplete: ${pinPath} must contain repo, path, bridge_sha, registry_sha256`);
+        errors.push(
+          `ADR registry pin incomplete: ${pinPath} must contain repo, path, bridge_sha, registry_sha256`,
+        );
       } else {
         const url = `https://raw.githubusercontent.com/${pin.repo}/${pin.bridge_sha}/${pin.path}`;
         let registryBytes = null;
@@ -194,7 +201,9 @@ if (baseRef && changed.length > 0) {
         if (registryBytes) {
           const actualHash = createHash('sha256').update(registryBytes).digest('hex');
           if (actualHash !== pin.registry_sha256) {
-            errors.push(`ADR registry hash mismatch: expected ${pin.registry_sha256}, got ${actualHash}`);
+            errors.push(
+              `ADR registry hash mismatch: expected ${pin.registry_sha256}, got ${actualHash}`,
+            );
           } else {
             let registry = null;
             try {
@@ -215,16 +224,22 @@ if (baseRef && changed.length > 0) {
                   continue;
                 }
                 if (matches.length > 1) {
-                  errors.push(`ADR ${adrPath}: registry has ${matches.length} entries for number ${number}`);
+                  errors.push(
+                    `ADR ${adrPath}: registry has ${matches.length} entries for number ${number}`,
+                  );
                   continue;
                 }
                 const entry = matches[0];
                 if (entry.repo !== 'lifestyle3nergy-web/TWGT-') {
-                  errors.push(`ADR ${adrPath}: registry assigns ${number} to ${entry.repo}, not TWGT-`);
+                  errors.push(
+                    `ADR ${adrPath}: registry assigns ${number} to ${entry.repo}, not TWGT-`,
+                  );
                   continue;
                 }
                 if (entry.slug !== slug) {
-                  errors.push(`ADR ${adrPath}: registry slug for ${number} is "${entry.slug}", file has "${slug}"`);
+                  errors.push(
+                    `ADR ${adrPath}: registry slug for ${number} is "${entry.slug}", file has "${slug}"`,
+                  );
                 }
               }
             } else if (registry) {
