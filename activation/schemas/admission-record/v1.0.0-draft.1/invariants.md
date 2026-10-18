@@ -1,7 +1,7 @@
 # Admission Contract Invariants
 
-Schema version: `1.0.0-draft.1`  
-Status: draft, non-normative until the `draft` suffix is removed.  
+Schema version: `1.0.0-draft.1`
+Status: draft, non-normative until the `draft` suffix is removed.
 Companion documents: `admission-record.schema.json`, `candidate-identity-v1.md`.
 
 ## 0. Purpose and scope

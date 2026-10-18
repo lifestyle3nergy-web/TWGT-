@@ -2,8 +2,8 @@
 
 - **Decision owners:** TWGT maintainers
 
-**Status:** Proposed — requires human review before merge  
-**Date:** 2026-10-15  
+**Status:** Proposed — requires human review before merge
+**Date:** 2026-10-15
 **Scope:** TWGT PR #119
 
 ## Context
