@@ -1,0 +1,30 @@
+# TWGT Expert Capability Controls
+version: 1
+mode: observe
+
+hard_limits:
+  latency_ms: 2000
+  cost_units: 100
+
+human_authorisation:
+  consequential_actions: true
+
+metric_selection:
+  validation_required: true
+  deterministic_tiebreak: true
+  workloads:
+    http: [cpu, rps, p95_latency, error_rate, saturation]
+    async: [queue_depth, queue_age, throughput, worker_utilisation]
+    batch: [job_age, completion_rate, backlog, resource_utilisation]
+    jvm: [heap_pressure, gc_pressure, cpu, p95_latency, error_rate]
+
+admission:
+  capability: required
+  visibility: required
+  privacy: required
+  transport: required
+  metering: required
+  edge_policy: required
+  battery_policy: required
+
+failure_policy: review_required
