@@ -1,4 +1,4 @@
-# ADR-0009: Single Runtime and Explicit TypeScript Build Boundary
+# ADR-0017: Single Runtime and Explicit TypeScript Build Boundary
 
 - **Status:** Accepted
 - **Date:** 2026-09-20
