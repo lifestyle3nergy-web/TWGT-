@@ -24,17 +24,15 @@ export class Bootstrap {
     const services = new ServiceCollection(container);
     const cognitiveLogger = new LoggerService('CognitiveCycle');
 
-    services
-      .addSingleton(Application, new Application())
-      .addSingleton(
-        CognitiveCycleService,
-        new CognitiveCycleService({
-          observer: new PassthroughObserver(),
-          interpreter: new EchoInterpreter(),
-          responder: new NoopResponder(),
-          logger: cognitiveLogger,
-        }),
-      );
+    services.addSingleton(Application, new Application()).addSingleton(
+      CognitiveCycleService,
+      new CognitiveCycleService({
+        observer: new PassthroughObserver(),
+        interpreter: new EchoInterpreter(),
+        responder: new NoopResponder(),
+        logger: cognitiveLogger,
+      }),
+    );
 
     this.provider = new ServiceProvider(services.build());
     this.application = this.provider.get(Application);

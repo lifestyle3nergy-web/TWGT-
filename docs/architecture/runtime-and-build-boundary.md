@@ -27,13 +27,13 @@ An executable TypeScript/TSX surface may only exist outside `src/` when it is ex
 
 ### Current non-production surfaces
 
-| Surface | Classification | Production build | Validation boundary |
-|---|---|---:|---|
-| `src/**` | Application | Included | TypeScript + ESLint + tests |
-| `tests/**` | Tests | Excluded | Vitest |
-| `vitest.config.ts` | Test tooling | Excluded | Loaded by Vitest |
-| `prisma.config.ts` | Database tooling | Excluded | Prisma CLI |
-| `twgt-dashboard/**` | Prototype | Excluded | Prototype-only; not a production release surface |
+| Surface             | Classification   | Production build | Validation boundary                              |
+| ------------------- | ---------------- | ---------------: | ------------------------------------------------ |
+| `src/**`            | Application      |         Included | TypeScript + ESLint + tests                      |
+| `tests/**`          | Tests            |         Excluded | Vitest                                           |
+| `vitest.config.ts`  | Test tooling     |         Excluded | Loaded by Vitest                                 |
+| `prisma.config.ts`  | Database tooling |         Excluded | Prisma CLI                                       |
+| `twgt-dashboard/**` | Prototype        |         Excluded | Prototype-only; not a production release surface |
 
 ## Acceptance rule for future code
 
