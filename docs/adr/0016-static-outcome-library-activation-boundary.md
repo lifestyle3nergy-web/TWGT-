@@ -1,4 +1,4 @@
-# ADR-0008 — Static Outcome Library Activation Boundary
+# ADR-0016 — Static Outcome Library Activation Boundary
 
 - **Status:** Proposed
 - **Date:** 2026-09-21
