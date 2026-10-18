@@ -10,6 +10,11 @@ const allowed = [
   { prefix: 'vitest.config.ts', classification: 'tooling' },
   { prefix: 'prisma.config.ts', classification: 'tooling' },
   { prefix: `twgt-dashboard${path.sep}`, classification: 'prototype' },
+  { prefix: `dashboard${path.sep}`, classification: 'prototype' },
+  { prefix: `lib${path.sep}`, classification: 'application' },
+  { prefix: 'CiHealth.tsx', classification: 'prototype' },
+  { prefix: 'StabilityMetrics.tsx', classification: 'prototype' },
+  { prefix: 'VersionHistory.tsx', classification: 'prototype' },
 ];
 
 function walk(dir) {
