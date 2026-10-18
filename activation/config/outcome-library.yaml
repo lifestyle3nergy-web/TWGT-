@@ -1,11 +1,11 @@
-version: "0.1.0"
+version: '0.1.0'
 id: twgt-static-outcome-library
 name: TWGT Static Outcome Library
-purpose: "Convert an observed environmental or customer demand into a governed, evidence-backed outcome package."
+purpose: 'Convert an observed environmental or customer demand into a governed, evidence-backed outcome package.'
 status: draft
 type: static-library
 runtime: none
-execution_boundary: "Static artefacts only; dynamic execution remains in an approved VM/service boundary."
+execution_boundary: 'Static artefacts only; dynamic execution remains in an approved VM/service boundary.'
 inputs:
   - demand
   - environment_context

@@ -11,6 +11,7 @@ Flow:
 `Environment → Demand → Observe → Understand → Outcome → Capability Map → Compose → Verify → Authorise → Publish → Measure → Evolve`
 
 Core artefacts:
+
 - `config/outcome-library.yaml` — library manifest and guardrails
 - `config/repo-environment.yaml` — repository activation environment
 - `config/capability-registry.yaml` — reusable capability classes and admission fields
