@@ -1,6 +1,6 @@
 {
   "repo": "lifestyle3nergy-web/engineering-intelligence",
   "path": "governance/adr-registry.json",
-  "bridge_sha": "00f25cdb5b448c97ff623dc8d426505b449385c1",
-  "registry_sha256": "cf37f844811a59d14a69a9131d480205905efa375de10e5f2e84f95aa43ba743"
+  "bridge_sha": "fa38bd83a73852b1543cd20c32ece17a4be681f5",
+  "registry_sha256": "742dae6aadede7e4eb393a243c747088fe89e6ee1ca0b6397ceef11e4e4a039d"
 }
