@@ -1,12 +1,14 @@
 Evidence: GitHub branch-protection API query (authenticated)
 Repo: lifestyle3nergy-web/twgt-git-hitl
 Branch: main
-API response: 404 Branch not protected
-Meaning: KNOWN-ABSENT — no branch protection rules on this branch.
+Previous state (2026-10-29 pre-R2): 404 Branch not protected
+Current state (2026-10-29 post-R2): PROTECTED
+  - required_approving_review_count: 1
+  - dismiss_stale_reviews: true
+  - allow_force_pushes: false
+  - allow_deletions: false
+  - required_status_checks: none yet (added in P02)
+Meaning: PROTECTED — merge authority, hardened before P01.
 Attested by: <TradieNate>
 Date: 2026-10-29
-
-Risk classification:
-  CRITICAL — trust-chain component, unprotected.
-
-Hardening schedule: see .twgt/phase00/G1.1.hardening-plan.md
+Authorization: see .twgt/phase00/R2.hardening-authorization.md
