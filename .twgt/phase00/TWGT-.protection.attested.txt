@@ -1,0 +1,9 @@
+Evidence: live remote rejection of direct push to main
+Source: git push attempt 2026-10-29 (HEAD:main, commit 0127a23)
+Rejection: GH013 Repository rule violations
+Assertions from remote:
+  - "Changes must be made through a pull request."
+  - "3 of 3 required status checks are expected."
+Enforcement: server-side (GH013), not client-side
+Attested by: lifestyle3nergy-web
+Date: 2026-10-29

@@ -2,7 +2,7 @@
 
 Status: Accepted
 Date: 2026-10-29
-Authorizer: <YOUR NAME>, Owner, lifestyle3nergy-web
+Authorizer: <TradieNate>, Owner, lifestyle3nergy-web
 
 ## Decision
 
