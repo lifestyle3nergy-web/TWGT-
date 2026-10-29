@@ -24,7 +24,8 @@
     "db:migrate": "prisma migrate dev",
     "db:push": "prisma db push",
     "db:studio": "prisma studio",
-    "validate:source-boundary": "node scripts/validate-source-boundary.mjs"
+    "validate:source-boundary": "node scripts/validate-source-boundary.mjs",
+    "prepare": "husky"
   },
   "dependencies": {
     "@fastify/cors": "^11.3.0",
@@ -55,6 +56,8 @@
     "@vitest/ui": "^5.0.5",
     "canonicalize": "^5.1.0",
     "eslint": "^10.10.0",
+    "husky": "^9.1.7",
+    "lint-staged": "^17.6.0",
     "prettier": "^3.9.6",
     "prisma": "7.10.1",
     "supertest": "^7.2.2",
@@ -76,5 +79,8 @@
     "prisma@7.10.0": true,
     "@prisma/engines@7.10.0": true,
     "bcrypt@6.0.0": true
+  },
+  "lint-staged": {
+    "*.{md,json,ts,js}": "prettier --write"
   }
 }
