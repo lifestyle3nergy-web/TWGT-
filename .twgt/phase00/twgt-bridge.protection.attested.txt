@@ -1,0 +1,12 @@
+Evidence: GitHub branch-protection API query (authenticated)
+Repo: lifestyle3nergy-web/twgt-bridge
+Branch: main
+API response: 404 Branch not protected
+Meaning: KNOWN-ABSENT — no branch protection rules on this branch.
+Attested by: <TradieNate>
+Date: 2026-10-29
+
+Risk classification:
+  HIGH — evidence collector, read-only contract not enforced at branch level.
+
+Hardening schedule: see .twgt/phase00/G1.1.hardening-plan.md

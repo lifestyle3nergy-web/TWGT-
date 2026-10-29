@@ -1,0 +1,13 @@
+Evidence: GitHub branch-protection API query (authenticated)
+Repo: lifestyle3nergy-web/libs
+Branch: master (default branch is master, not main)
+API response: 404 Branch not protected
+Meaning: KNOWN-ABSENT — no branch protection rules on this branch.
+Attested by: <TradieNate>
+Date: 2026-10-29
+
+Risk classification:
+  HIGH — shared native library surface. If consumed by spine components,
+  unprotected merges to libs propagate to those consumers without review.
+
+Hardening schedule: see .twgt/phase00/G1.1.hardening-plan.md
