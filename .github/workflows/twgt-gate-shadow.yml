@@ -18,13 +18,18 @@ jobs:
         with:
           node-version: 22
 
+      - name: Setup OPA
+        run: |
+          curl -L -o /usr/local/bin/opa https://openpolicyagent.org/downloads/latest/opa_linux_amd64_static
+          chmod +x /usr/local/bin/opa
+          opa run --server --addr localhost:8181 /tmp/twgt-gate/policies/ &
+
       - name: Build TWGT Gate
         run: |
-          # PINNED to the specific commit of the gate release
           git clone https://github.com/lifestyle3nergy-web/twgt-schema-gate.git /tmp/twgt-gate
           cd /tmp/twgt-gate
-          # Checkout a specific immutable commit
-          git checkout main
+          # PINNED to the exact immutable commit
+          git checkout 2218a654c7e0e46e0ed980434066557ab5aac550
           npm ci
           npm run build
 
@@ -37,5 +42,6 @@ jobs:
           fi
           for FILE in $FILES; do
             echo "=== Validating $FILE ==="
-            node /tmp/twgt-gate/dist/index.js "$FILE" --local
+            # Removed --local so it hits the OPA server
+            node /tmp/twgt-gate/dist/index.js "$FILE"
           done
