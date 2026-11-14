@@ -27,7 +27,7 @@
     "validate:source-boundary": "node scripts/validate-source-boundary.mjs"
   },
   "dependencies": {
-    "@fastify/cors": "^11.3.0",
+    "@fastify/cors": "^11.4.1",
     "@fastify/jwt": "^10.2.6",
     "@prisma/adapter-pg": "7.10.1",
     "@prisma/client": "7.10.1",
