@@ -1,0 +1,157 @@
+name: runtime-smoke
+
+on:
+  pull_request:
+    branches: [main]
+  merge_group:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: runtime-smoke-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  runtime:
+    name: runtime (postgres + redis + http)
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_USER: twgt
+          POSTGRES_PASSWORD: twgt
+          POSTGRES_DB: twgt
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd="pg_isready -U twgt -d twgt"
+          --health-interval=5s
+          --health-timeout=5s
+          --health-retries=20
+
+      redis:
+        image: redis:7
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd="redis-cli ping"
+          --health-interval=5s
+          --health-timeout=5s
+          --health-retries=20
+
+    env:
+      DATABASE_URL: postgresql://twgt:twgt@localhost:5432/twgt?schema=public
+      REDIS_URL: redis://localhost:6379
+      NEO4J_PASSWORD: runtime-smoke-neo4j-placeholder
+      JWT_SECRET: runtime-smoke-jwt-secret-000000000000
+      REFRESH_SECRET: runtime-smoke-refresh-secret-00000000
+      NODE_ENV: test
+      PORT: "3000"
+      HOST: 127.0.0.1
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node (from .nvmrc)
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+
+      - name: npm ci
+        run: npm ci
+
+      - name: Prisma validate
+        run: npx prisma validate
+
+      - name: Prisma generate
+        run: npx prisma generate
+
+      - name: Prisma migrate deploy
+        run: npx prisma migrate deploy
+
+      - name: Prisma migrate status
+        run: npx prisma migrate status
+
+      - name: Build
+        run: npm run build
+
+      - name: Start via npm start (new session for SIGTERM test)
+        run: |
+          set -euo pipefail
+          mkdir -p .runtime-logs
+          setsid npm start > .runtime-logs/server.log 2>&1 &
+          echo $! > .runtime-logs/server.pid
+
+      - name: Wait for /health (200 + healthy body)
+        run: |
+          set -euo pipefail
+          url="http://127.0.0.1:${PORT}/health"
+          for i in $(seq 1 30); do
+            code=$(curl -sS -o .runtime-logs/health.json -w '%{http_code}' "$url" || true)
+            if [ "$code" = "200" ]; then
+              echo "health returned 200 after ${i}s"
+              cat .runtime-logs/health.json
+              exit 0
+            fi
+            sleep 1
+          done
+          echo "::error::/health never returned 200 within 30s"
+          echo "----- last body -----"
+          cat .runtime-logs/health.json 2>/dev/null || true
+          echo "----- server.log -----"
+          cat .runtime-logs/server.log || true
+          exit 1
+
+      - name: Assert /health shape (database + cache both ok)
+        run: |
+          set -euo pipefail
+          jq -e '
+            .success == true
+            and .status == "healthy"
+            and .services.database == "ok"
+            and .services.cache == "ok"
+          ' .runtime-logs/health.json > /dev/null             || { echo "::error::/health shape assertion failed"; cat .runtime-logs/health.json; exit 1; }
+
+      - name: Assert /ready (application-liveness only)
+        run: |
+          set -euo pipefail
+          url="http://127.0.0.1:${PORT}/ready"
+          code=$(curl -sS -o .runtime-logs/ready.json -w '%{http_code}' "$url")
+          [ "$code" = "200" ] || { echo "::error::/ready returned $code"; exit 1; }
+          jq -e '.success == true and .status == "ready"' .runtime-logs/ready.json > /dev/null             || { echo "::error::/ready shape assertion failed"; cat .runtime-logs/ready.json; exit 1; }
+
+      - name: Controlled shutdown (SIGTERM to process group)
+        if: always()
+        run: |
+          set -euo pipefail
+          if [ ! -f .runtime-logs/server.pid ]; then
+            echo "no pid file; nothing to stop"
+            exit 0
+          fi
+          pgid=$(cat .runtime-logs/server.pid)
+          kill -TERM "-$pgid" 2>/dev/null || true
+          for i in $(seq 1 10); do
+            if ! kill -0 "-$pgid" 2>/dev/null; then
+              echo "process group exited after ${i}s"
+              exit 0
+            fi
+            sleep 1
+          done
+          echo "::warning::SIGTERM did not terminate process group within 10s"
+          kill -KILL "-$pgid" 2>/dev/null || true
+
+      - name: Upload runtime logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: runtime-smoke-logs
+          path: .runtime-logs/
+          if-no-files-found: ignore
+          retention-days: 7
